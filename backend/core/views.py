@@ -7,6 +7,16 @@ from .serializers import ExerciseSerializer, UserSerializer, CourseSerializer
 
 
 
+# Informazioni utente corrente
+class UserInfoView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+
 # Registrazione utente
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()

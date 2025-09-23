@@ -48,81 +48,169 @@ function RegisterPage() {
   };
 
   return (
-    <div style={{ 
-      maxWidth: '400px', 
-      margin: '50px auto', 
-      padding: '20px',
-      border: '1px solid #ddd',
-      borderRadius: '8px'
-    }}>
-      <h2>Registrazione</h2>
-      
-      <div style={{ marginBottom: '15px' }}>
-        <input 
-          type="email" 
-          placeholder="Email" 
-          value={email} 
-          onChange={e => setEmail(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
-        />
-        <input 
-          type="text" 
-          placeholder="Matricola" 
-          value={matr} 
-          onChange={e => setMatr(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
-        />
-        <input 
-          type="text" 
-          placeholder="Nome" 
-          value={firstName} 
-          onChange={e => setFirstName(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
-        />
-        <input 
-          type="text" 
-          placeholder="Cognome" 
-          value={lastName} 
-          onChange={e => setLastName(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
-        />
-        <input 
-          type="password" 
-          placeholder="Password" 
-          value={password} 
-          onChange={e => setPassword(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
-        />
-
-        <select 
-          value={courseId} 
-          onChange={e => setCourseId(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
-        >
-          <option value="">Seleziona corso</option>
-          {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">GPU Code Runner</h1>
+          <p className="text-sm text-gray-600">Sistema di valutazione esercizi di programmazione</p>
+        </div>
+        <h2 className="mt-6 text-center text-2xl font-semibold text-gray-900">
+          Crea il tuo account
+        </h2>
       </div>
 
-      <button 
-        onClick={handleRegister} 
-        disabled={loading}
-        style={{ 
-          width: '100%', 
-          padding: '10px', 
-          backgroundColor: '#28a745',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: loading ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {loading ? 'Caricamento...' : 'Registrati'}
-      </button>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="card">
+          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleRegister(); }}>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="form-group">
+                <label htmlFor="firstName" className="form-label">
+                  Nome
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  autoComplete="given-name"
+                  required
+                  className="input-field"
+                  placeholder="Mario"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
 
-      <p style={{ textAlign: 'center', marginTop: '15px' }}>
-        Hai già un account? <Link to="/login">Login</Link>
-      </p>
+              <div className="form-group">
+                <label htmlFor="lastName" className="form-label">
+                  Cognome
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  autoComplete="family-name"
+                  required
+                  className="input-field"
+                  placeholder="Rossi"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
+                Indirizzo email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="input-field"
+                placeholder="mario.rossi@studenti.unimore.it"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="matr" className="form-label">
+                Numero di matricola
+              </label>
+              <input
+                id="matr"
+                name="matr"
+                type="text"
+                required
+                className="input-field"
+                placeholder="123456"
+                value={matr}
+                onChange={(e) => setMatr(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="course" className="form-label">
+                Corso di laurea
+              </label>
+              <select
+                id="course"
+                name="course"
+                required
+                className="input-field"
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+              >
+                <option value="">Seleziona un corso</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                className="input-field"
+                placeholder="Inserisci una password sicura"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full flex justify-center py-3 px-4 text-sm font-medium"
+              >
+                {loading ? (
+                  <div className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Registrazione in corso...
+                  </div>
+                ) : (
+                  'Registrati'
+                )}
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Oppure</span>
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Hai già un account?{' '}
+                <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500 transition-colors">
+                  Accedi
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

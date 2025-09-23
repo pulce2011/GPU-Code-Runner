@@ -1,120 +1,58 @@
-# 🎓 GPU Code Runner Web App
+# GPU Code Runner
 
-Questa web-app, sviluppata come progetto di tesi, permette agli studenti di:
+Sistema di valutazione esercizi di programmazione sviluppato per la tesi di laurea.
 
-- Registrarsi e autenticarsi tramite **email e matricola**.  
-- Selezionare il proprio **corso di studi**.  
-- Visualizzare e scegliere una **consegna di esercizio** associata al corso.  
-- Scrivere il corpo di una funzione in un **editor online** (Monaco Editor) con firma e commento autocompilati.  
-- Eseguire il codice (simulazione GPU tramite **script bash**) e visualizzare **stdout** e **stderr**.  
-- Fare **logout** e mantenere la sessione attiva anche al refresh del browser grazie a JWT.
+## 🎯 Panoramica
 
----
+GPU Code Runner è un'applicazione web moderna che permette agli studenti di programmazione di:
+- Registrarsi e autenticarsi nel sistema
+- Selezionare esercizi di programmazione C/C++
+- Scrivere e testare codice in un editor integrato
+- Visualizzare i risultati dell'esecuzione in tempo reale
 
-## 📐 Architettura
+## 🛠️ Tecnologie Utilizzate
 
-L’applicazione è composta da due parti principali:
+### Backend
+- **Django 5.2.6** - Framework web Python
+- **Django REST Framework** - API REST
+- **JWT Authentication** - Autenticazione sicura
+- **SQLite** - Database di sviluppo
+- **CORS** - Gestione cross-origin requests
 
-### Frontend (React)
+### Frontend
+- **React 18** - Libreria UI
+- **React Router** - Navigazione tra pagine
+- **Tailwind CSS** - Framework CSS per design moderno e professionale
+- **Monaco Editor** - Editor di codice integrato
+- **Axios** - Client HTTP
 
-- Gestione login e logout.  
-- Dashboard con selezione esercizi filtrati per corso.  
-- Monaco Editor con autocompletamento della **firma della funzione** (tipo, nome e parametri).  
-- Bottone *RUN* per inviare il codice al backend.  
-- Visualizzazione dell’output (stdout/stderr).  
-- Persistenza dei token JWT in `localStorage` per mantenere la sessione attiva al refresh.  
+## 🎨 Design
 
-### Backend (Django + DRF)
+L'applicazione utilizza un design formale e professionale adatto per una presentazione accademica:
 
-- API per autenticazione via **JWT** (access + refresh token).  
-- API per gestione utenti, corsi ed esercizi (solo quelli del corso dello studente).  
-- API per esecuzione codice:  
-  - Salvataggio codice in file temporaneo.  
-  - Esecuzione tramite **script bash** (`simulate_gpu.sh`).  
-  - Restituzione stdout/stderr.  
-- Database (PostgreSQL o SQLite in locale) gestito tramite ORM Django.  
-- Admin panel per gestione corsi ed esercizi.
+- **Palette colori**: Blu primario (#3b82f6) con grigi neutri
+- **Tipografia**: Font Inter per leggibilità ottimale
+- **Layout**: Design responsive con componenti card-based
+- **UX**: Interfaccia intuitiva con feedback visivi chiari
 
----
+## 🚀 Installazione e Avvio
 
-## 🗂️ Modello Dati
-
-### Utente (`User`)
-- `id`  
-- `email` (login)  
-- `matr` (matricola, unica)  
-- `first_name`  
-- `last_name`  
-- `password` (hash)  
-- `course` (FK → Course)
-
-### Corso (`Course`)
-- `id`  
-- `name`  
-
-### Esercizio (`Exercise`)
-- `id`  
-- `name` (nome funzione)  
-- `return_type` (tipo di ritorno)  
-- `params` (lista JSON dei parametri)  
-- `comment` (consegna)  
-- `courses` (ManyToMany con corsi)
-
----
-
-## 🔄 Flusso Utente
-
-1. Registrazione dello studente con selezione del **corso di studi**.  
-2. Login (persistenza JWT).  
-3. Dashboard: visualizzazione solo degli esercizi del proprio corso.  
-4. Selezione esercizio → **firma della funzione e commento autocompilati** nell’editor.  
-5. Scrittura del **body** della funzione.  
-6. Clic su *RUN* → backend salva codice su file temporaneo e chiama `simulate_gpu.sh`.  
-7. Output (`stdout` e `stderr`) visualizzato nel frontend.  
-8. Logout → rimozione token e ritorno al login.
-
----
-
-## 🛠️ Stack Tecnologico
-
-**Frontend**
-- React + TailwindCSS  
-- Monaco Editor  
-- Axios per chiamate API  
-- Autenticazione via JWT (persistenza token in localStorage)  
-
-**Backend**
-- Django + Django REST Framework  
-- Autenticazione e gestione utenti con JWT  
-- Modelli per utenti, corsi ed esercizi  
-- `subprocess` per esecuzione codice simulata  
-- Admin panel per gestione contenuti
-
-**Database**
-- SQLite (locale) / PostgreSQL (produzione)
-
-**Altri strumenti**
-- Docker (opzionale, per container backend + DB)  
-- Nginx (reverse proxy in produzione)
-
----
-
-## 🚀 Setup Locale
-
-### Requisiti
-- Node.js ≥ 18  
-- Python ≥ 3.10  
-- PostgreSQL ≥ 14 (opzionale per SQLite)  
-- Docker (opzionale)
+### Prerequisiti
+- Python 3.8+
+- Node.js 18+
+- npm o yarn
 
 ### Backend
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Linux/Mac
+# oppure
+venv\Scripts\activate  # Windows
+
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py createsuperuser  # opzionale, per admin
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
@@ -125,15 +63,119 @@ npm install
 npm start
 ```
 
-- Il frontend gira su `http://localhost:3000`  
-- Il backend gira su `http://127.0.0.1:8000`  
+## 📁 Struttura del Progetto
 
----
+```
+GPUCodeRunner/
+├── backend/
+│   ├── core/
+│   │   ├── models.py      # Modelli Django
+│   │   ├── views.py       # API endpoints
+│   │   ├── admin.py       # Configurazione admin
+│   │   └── serializers.py # Serializzatori API
+│   ├── backend/
+│   │   └── settings.py    # Configurazione Django
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── pages/         # Pagine principali
+│   │   ├── components/    # Componenti riutilizzabili
+│   │   ├── hooks/         # Custom hooks
+│   │   └── services/      # Servizi API
+│   ├── tailwind.config.js
+│   └── package.json
+└── README.md
+```
 
-## 📌 Note Aggiuntive
+## 🔐 Autenticazione
 
-- Script di simulazione GPU: `simulate_gpu.sh` (deve essere eseguibile).  
-- JWT: access token ha durata breve (~5 minuti), refresh token gestisce il rinnovo automatico.  
-- Logout: rimuove token da memoria e `localStorage`, resetta stato React.  
-- Il codice scritto dall’utente non viene salvato in DB, solo eseguito temporaneamente.
+Il sistema utilizza JWT (JSON Web Tokens) per l'autenticazione:
+- **Access Token**: Valido per 60 minuti
+- **Refresh Token**: Valido per 24 ore
+- **Auto-refresh**: Rinnovo automatico dei token
 
+## 📱 Pagine Principali
+
+### Login (`/login`)
+- Form di accesso con validazione
+- Design pulito e professionale
+- Link alla registrazione
+
+### Registrazione (`/register`)
+- Form completo con tutti i campi necessari
+- Selezione corso di laurea
+- Validazione lato client e server
+
+### Dashboard (`/dashboard`)
+- Selezione esercizi disponibili
+- Editor di codice Monaco integrato
+- Esecuzione e visualizzazione risultati
+- Header con logout
+
+## 🎯 Funzionalità
+
+### Gestione Esercizi
+- Caricamento dinamico degli esercizi dal backend
+- Visualizzazione firma funzione e consegna
+- Editor con syntax highlighting C/C++
+
+### Esecuzione Codice
+- Invio codice al backend per compilazione
+- Visualizzazione output standard e errori
+- Gestione stati di caricamento
+
+### Responsive Design
+- Layout adattivo per desktop e mobile
+- Componenti ottimizzati per diverse dimensioni schermo
+
+## 🔧 Configurazione
+
+### Variabili d'Ambiente
+Il progetto supporta file `.env` per la configurazione:
+
+**Backend** (`backend/.env`):
+```
+DEBUG=True
+SECRET_KEY=your-secret-key
+ALLOWED_HOSTS=127.0.0.1,localhost
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+```
+
+**Frontend** (`frontend/.env`):
+```
+REACT_APP_API_BASE_URL=http://127.0.0.1:8000
+REACT_APP_APP_NAME=GPU Code Runner
+```
+
+## 📊 Modelli Dati
+
+### User (Utente Personalizzato)
+- Email come username
+- Matricola unica
+- Collegamento al corso di laurea
+
+### Course (Corso)
+- Nome del corso di laurea
+- Collegamento agli esercizi
+
+### Exercise (Esercizio)
+- Nome e tipo di ritorno
+- Parametri JSON
+- Commento/consegna
+- Collegamento ai corsi
+
+## 🎓 Caratteristiche per Tesi
+
+- **Design Professionale**: Interfaccia formale adatta per presentazioni accademiche
+- **Codice Pulito**: Architettura modulare e ben documentata
+- **Sicurezza**: Autenticazione JWT e validazione dati
+- **Responsive**: Funziona su tutti i dispositivi
+- **Documentazione**: Codice commentato e README completo
+
+## 🤝 Contributi
+
+Questo progetto è stato sviluppato per la tesi di laurea. Per eventuali miglioramenti o correzioni, contattare l'autore.
+
+## 📄 Licenza
+
+Progetto accademico - Tutti i diritti riservati.

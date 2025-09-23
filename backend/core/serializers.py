@@ -19,9 +19,11 @@ class CourseSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    course_name = serializers.CharField(source='course.name', read_only=True)
+    
     class Meta:
         model = User
-        fields = ['id', 'email', 'matr', 'first_name', 'last_name', 'course', 'password']
+        fields = ['id', 'email', 'matr', 'first_name', 'last_name', 'course', 'course_name', 'password']
         extra_kwargs = {
             'password': {'write_only': True}
         }
