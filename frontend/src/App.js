@@ -1,23 +1,40 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState } from 'react';
+import Login from './components/Login';
+import ExerciseSelector from './components/ExerciseSelector';
+import CodeEditor from './components/CodeEditor';
 
 function App() {
+  const [loggedIn, setLoggedIn] = useState(false);              // Stato login
+  const [selectedExercise, setSelectedExercise] = useState(null); // Esercizio selezionato
+
+  // Chiamata da Login.js quando login va a buon fine
+  const handleLoginSuccess = () => {
+    console.log('Utente loggato!');
+    setLoggedIn(true);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ padding: '20px' }}>
+      {!loggedIn ? (
+        // Mostra Login se non loggato
+        <Login onLogin={handleLoginSuccess} />
+      ) : (
+        // Mostra ExerciseSelector + CodeEditor se loggato
+        <div>
+          <h2>Benvenuto! Seleziona un esercizio</h2>
+          <ExerciseSelector onSelect={setSelectedExercise} />
+
+          {selectedExercise && (
+            <div style={{ marginTop: '20px' }}>
+              <p>Hai selezionato: <strong>{selectedExercise.name}</strong></p>
+              <CodeEditor
+                exercise={selectedExercise} // Deve contenere `signature` dal backend
+                onCodeChange={(code) => console.log('Codice aggiornato:', code)}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
