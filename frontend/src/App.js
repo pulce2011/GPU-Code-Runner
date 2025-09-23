@@ -3,47 +3,62 @@ import Login from './components/Login';
 import ExerciseSelector from './components/ExerciseSelector';
 import CodeEditor from './components/CodeEditor';
 import RunButton from './components/RunButton';
+import { setTokens } from './services/api';
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);              // Stato login
-  const [selectedExercise, setSelectedExercise] = useState(null); // Esercizio selezionato
+  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('accessToken'));
+  const [selectedExercise, setSelectedExercise] = useState(null);
   const [selectedCode, setSelectedCode] = useState('');
 
-  // Controlla se l'utente è loggato
+  // Persistenza token: al mount controlla localStorage
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) setLoggedIn(true);
+    const access = localStorage.getItem('accessToken');
+    const refresh = localStorage.getItem('refreshToken');
+    if (access && refresh) setTokens(access, refresh);
   }, []);
 
-  // Chiamata da Login.js quando login va a buon fine
-  const handleLoginSuccess = () => {
-    console.log('Utente loggato!');
+  // Login handler
+  const handleLoginSuccess = (access, refresh) => {
+    setTokens(access, refresh);
     setLoggedIn(true);
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setTokens(null, null);
+
+    setLoggedIn(false);
+    setSelectedExercise(null);
+    setSelectedCode('');
   };
 
   return (
     <div style={{ padding: '20px' }}>
       {!loggedIn ? (
-        // Mostra Login se non loggato
         <Login onLogin={handleLoginSuccess} />
       ) : (
-        // Mostra ExerciseSelector + CodeEditor se loggato
         <div>
+          <button onClick={handleLogout} style={{ marginBottom: '20px' }}>
+            Logout
+          </button>
+
           <h2>Benvenuto! Seleziona un esercizio</h2>
           <ExerciseSelector onSelect={setSelectedExercise} />
 
           {selectedExercise && (
             <div style={{ marginTop: '20px' }}>
-              <p>Hai selezionato: <strong>{selectedExercise.name}</strong></p>
+              <p>
+                Hai selezionato: <strong>{selectedExercise.name}</strong>
+              </p>
+
               <CodeEditor
-                exercise={selectedExercise} // Deve contenere `signature` dal backend
+                exercise={selectedExercise}
                 onCodeChange={setSelectedCode}
               />
 
-              {selectedExercise && (
-                <RunButton code={selectedCode} />
-              )}
-
+              <RunButton code={selectedCode} />
             </div>
           )}
         </div>
