@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import ExerciseSelector from './components/ExerciseSelector';
 import CodeEditor from './components/CodeEditor';
@@ -8,6 +8,12 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(false);              // Stato login
   const [selectedExercise, setSelectedExercise] = useState(null); // Esercizio selezionato
   const [selectedCode, setSelectedCode] = useState('');
+
+  // Controlla se l'utente è loggato
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) setLoggedIn(true);
+  }, []);
 
   // Chiamata da Login.js quando login va a buon fine
   const handleLoginSuccess = () => {
