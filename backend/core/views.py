@@ -1,11 +1,10 @@
-from rest_framework import generics, permissions, status, views
-from rest_framework.response import Response
-from .models import Exercise
 import tempfile
 import subprocess
-from .serializers import ExerciseSerializer
-from .models import User
-from .serializers import UserSerializer
+from rest_framework import generics, permissions, status, views
+from rest_framework.response import Response
+from .models import Exercise, Course, User
+from .serializers import ExerciseSerializer, UserSerializer, CourseSerializer
+
 
 
 # Registrazione utente
@@ -21,6 +20,13 @@ class RegisterView(generics.CreateAPIView):
 
         # opzionale: puoi anche generare qui JWT se vuoi login automatico
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# Lista corsi
+class CourseListView(generics.ListAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    permission_classes = [permissions.AllowAny]  # accessibile anche senza login
 
 
 # Lista esercizi filtrati per corso utente loggato
