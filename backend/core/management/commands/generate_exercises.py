@@ -12,6 +12,7 @@ class Command(BaseCommand):
             return
 
         exercises_data = [
+            # Funzioni matematiche base
             {
                 'name': 'sum',
                 'return_type': 'int',
@@ -25,6 +26,12 @@ class Command(BaseCommand):
                 'comment': 'Moltiplica due numeri interi'
             },
             {
+                'name': 'divide',
+                'return_type': 'float',
+                'params': [{'type': 'float', 'name': 'a'}, {'type': 'float', 'name': 'b'}],
+                'comment': 'Divide due numeri floating point'
+            },
+            {
                 'name': 'factorial',
                 'return_type': 'int',
                 'params': [{'type': 'int', 'name': 'n'}],
@@ -36,6 +43,8 @@ class Command(BaseCommand):
                 'params': [{'type': 'int', 'name': 'n'}],
                 'comment': 'Calcola l\'n-esimo numero di Fibonacci'
             },
+            
+            # Funzioni di verifica (restituiscono int 1/0)
             {
                 'name': 'is_prime',
                 'return_type': 'int',
@@ -43,10 +52,42 @@ class Command(BaseCommand):
                 'comment': 'Verifica se un numero è primo (1 se vero, 0 se falso)'
             },
             {
+                'name': 'is_even',
+                'return_type': 'int',
+                'params': [{'type': 'int', 'name': 'n'}],
+                'comment': 'Verifica se un numero è pari (1 se vero, 0 se falso)'
+            },
+            {
+                'name': 'is_odd',
+                'return_type': 'int',
+                'params': [{'type': 'int', 'name': 'n'}],
+                'comment': 'Verifica se un numero è dispari (1 se vero, 0 se falso)'
+            },
+            {
+                'name': 'is_palindrome',
+                'return_type': 'int',
+                'params': [{'type': 'int', 'name': 'n'}],
+                'comment': 'Verifica se un numero è palindromo (1 se vero, 0 se falso)'
+            },
+            {
+                'name': 'is_perfect_square',
+                'return_type': 'int',
+                'params': [{'type': 'int', 'name': 'n'}],
+                'comment': 'Verifica se un numero è un quadrato perfetto (1 se vero, 0 se falso)'
+            },
+            
+            # Funzioni di calcolo
+            {
                 'name': 'gcd',
                 'return_type': 'int',
                 'params': [{'type': 'int', 'name': 'a'}, {'type': 'int', 'name': 'b'}],
                 'comment': 'Calcola il massimo comun divisore tra due numeri'
+            },
+            {
+                'name': 'lcm',
+                'return_type': 'int',
+                'params': [{'type': 'int', 'name': 'a'}, {'type': 'int', 'name': 'b'}],
+                'comment': 'Calcola il minimo comune multiplo tra due numeri'
             },
             {
                 'name': 'power',
@@ -54,6 +95,20 @@ class Command(BaseCommand):
                 'params': [{'type': 'int', 'name': 'base'}, {'type': 'int', 'name': 'exp'}],
                 'comment': 'Calcola base elevato a exp'
             },
+            {
+                'name': 'square',
+                'return_type': 'int',
+                'params': [{'type': 'int', 'name': 'n'}],
+                'comment': 'Calcola il quadrato di un numero'
+            },
+            {
+                'name': 'cube',
+                'return_type': 'int',
+                'params': [{'type': 'int', 'name': 'n'}],
+                'comment': 'Calcola il cubo di un numero'
+            },
+            
+            # Funzioni di manipolazione
             {
                 'name': 'reverse_number',
                 'return_type': 'int',
@@ -73,17 +128,13 @@ class Command(BaseCommand):
                 'comment': 'Calcola la somma delle cifre di un numero'
             },
             {
-                'name': 'is_palindrome',
+                'name': 'absolute_value',
                 'return_type': 'int',
                 'params': [{'type': 'int', 'name': 'n'}],
-                'comment': 'Verifica se un numero è palindromo (1 se vero, 0 se falso)'
+                'comment': 'Calcola il valore assoluto di un numero'
             },
-            {
-                'name': 'lcm',
-                'return_type': 'int',
-                'params': [{'type': 'int', 'name': 'a'}, {'type': 'int', 'name': 'b'}],
-                'comment': 'Calcola il minimo comune multiplo tra due numeri'
-            },
+            
+            # Funzioni di confronto
             {
                 'name': 'max_of_three',
                 'return_type': 'int',
@@ -96,53 +147,57 @@ class Command(BaseCommand):
                 'params': [{'type': 'int', 'name': 'a'}, {'type': 'int', 'name': 'b'}, {'type': 'int', 'name': 'c'}],
                 'comment': 'Trova il minimo tra tre numeri'
             },
+            
+            # Funzioni void (che stampano direttamente)
             {
-                'name': 'is_even',
-                'return_type': 'int',
+                'name': 'print_hello',
+                'return_type': 'void',
+                'params': [],
+                'comment': 'Stampa "Hello, World!" sulla console'
+            },
+            {
+                'name': 'print_number',
+                'return_type': 'void',
                 'params': [{'type': 'int', 'name': 'n'}],
-                'comment': 'Verifica se un numero è pari (1 se vero, 0 se falso)'
+                'comment': 'Stampa un numero sulla console'
             },
             {
-                'name': 'is_odd',
-                'return_type': 'int',
+                'name': 'print_square',
+                'return_type': 'void',
                 'params': [{'type': 'int', 'name': 'n'}],
-                'comment': 'Verifica se un numero è dispari (1 se vero, 0 se falso)'
+                'comment': 'Stampa il quadrato di un numero sulla console'
             },
             {
-                'name': 'square',
-                'return_type': 'int',
+                'name': 'print_factorial',
+                'return_type': 'void',
                 'params': [{'type': 'int', 'name': 'n'}],
-                'comment': 'Calcola il quadrato di un numero'
+                'comment': 'Stampa il fattoriale di n sulla console'
             },
             {
-                'name': 'cube',
-                'return_type': 'int',
+                'name': 'print_fibonacci_sequence',
+                'return_type': 'void',
                 'params': [{'type': 'int', 'name': 'n'}],
-                'comment': 'Calcola il cubo di un numero'
+                'comment': 'Stampa i primi n numeri della sequenza di Fibonacci'
+            },
+            
+            # Funzioni con array
+            {
+                'name': 'sum_array',
+                'return_type': 'int',
+                'params': [{'type': 'int[]', 'name': 'arr'}, {'type': 'int', 'name': 'size'}],
+                'comment': 'Calcola la somma di tutti gli elementi di un array'
             },
             {
-                'name': 'absolute_value',
+                'name': 'find_max',
                 'return_type': 'int',
-                'params': [{'type': 'int', 'name': 'n'}],
-                'comment': 'Calcola il valore assoluto di un numero'
+                'params': [{'type': 'int[]', 'name': 'arr'}, {'type': 'int', 'name': 'size'}],
+                'comment': 'Trova il valore massimo in un array'
             },
             {
-                'name': 'sum_squares',
-                'return_type': 'int',
-                'params': [{'type': 'int', 'name': 'a'}, {'type': 'int', 'name': 'b'}],
-                'comment': 'Calcola la somma dei quadrati di due numeri'
-            },
-            {
-                'name': 'difference_squares',
-                'return_type': 'int',
-                'params': [{'type': 'int', 'name': 'a'}, {'type': 'int', 'name': 'b'}],
-                'comment': 'Calcola la differenza dei quadrati di due numeri'
-            },
-            {
-                'name': 'is_perfect_square',
-                'return_type': 'int',
-                'params': [{'type': 'int', 'name': 'n'}],
-                'comment': 'Verifica se un numero è un quadrato perfetto (1 se vero, 0 se falso)'
+                'name': 'reverse_array',
+                'return_type': 'void',
+                'params': [{'type': 'int[]', 'name': 'arr'}, {'type': 'int', 'name': 'size'}],
+                'comment': 'Inverte l\'ordine degli elementi in un array'
             }
         ]
 
