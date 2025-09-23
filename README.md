@@ -1,6 +1,6 @@
 # 🎓 GPU Code Runner Web App
 
-Questo progetto è una web-app sviluppata come tesi, che permette a studenti registrati di:
+Questo progetto è una web-app sviluppata come tesi, che permette agli studenti di:
 - Autenticarsi (login/registrazione).
 - Selezionare il proprio **corso di studi**.
 - Visualizzare e scegliere una **consegna di esercizio** associata al corso.
@@ -47,10 +47,10 @@ L’applicazione è composta da due parti principali:
 
 - **Esercizio**  
   - `id`  
-  - `nome_funzione`  
-  - `parametri`  
-  - `commento`  
-  - `tipo`  
+  - `name`  
+  - `params`  
+  - `comment`  
+  - `return_type`  
   - `corso_id`
 
 ---
