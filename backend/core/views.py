@@ -4,6 +4,24 @@ from .models import Exercise
 import tempfile
 import subprocess
 from .serializers import ExerciseSerializer
+from .models import User
+from .serializers import UserSerializer
+
+
+# Registrazione utente
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # opzionale: puoi anche generare qui JWT se vuoi login automatico
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 # Lista esercizi filtrati per corso utente loggato
 class ExerciseListView(generics.ListAPIView):
@@ -16,6 +34,8 @@ class ExerciseListView(generics.ListAPIView):
             return Exercise.objects.filter(courses=user.course)
         return Exercise.objects.none()
 
+
+# Esecuzione codice
 class RunExerciseView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
