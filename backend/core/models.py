@@ -80,6 +80,6 @@ class Exercise(models.Model):
         
         # Combina tutto
         if comment_block:
-            return f"{comment_block}\n{signature_line}"
+            return f"{comment_block}\n{signature_line} {'{'}\n\n{'}'}\n"
         else:
             return signature_line
