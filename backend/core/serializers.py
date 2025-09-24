@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Exercise, User, Course
 
+# Serializzatore per gli esercizi
 class ExerciseSerializer(serializers.ModelSerializer):
     signature = serializers.SerializerMethodField()
 
@@ -12,12 +13,14 @@ class ExerciseSerializer(serializers.ModelSerializer):
         return obj.build_signature()
 
 
+# Serializzatore per i corsi
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ['id', 'name']
 
 
+# Serializzatore per gli utenti
 class UserSerializer(serializers.ModelSerializer):
     course_name = serializers.CharField(source='course.name', read_only=True)
     

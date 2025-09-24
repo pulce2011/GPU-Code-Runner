@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 
+// Pagina di registrazione con selezione corso
 function RegisterPage() {
   const [email, setEmail] = useState('');
   const [matr, setMatr] = useState('');
@@ -13,13 +14,14 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Recupera corsi dal backend
+  // Carica lista corsi dal backend
   useEffect(() => {
     api.get('/courses/')
       .then(res => setCourses(res.data))
       .catch(err => console.error(err));
   }, []);
 
+  // Gestisce submit form registrazione
   const handleRegister = async () => {
     if (!email || !matr || !firstName || !lastName || !password || !courseId) {
       alert('Compila tutti i campi');
@@ -28,6 +30,7 @@ function RegisterPage() {
 
     setLoading(true);
     try {
+      // Crea nuovo utente
       await api.post('/register/', {
         email,
         matr,
@@ -37,6 +40,7 @@ function RegisterPage() {
         course: courseId ? parseInt(courseId) : null
       });
 
+      // Successo - redirect al login
       alert('Registrazione completata! Ora puoi effettuare il login.');
       navigate('/login');
     } catch (err) {

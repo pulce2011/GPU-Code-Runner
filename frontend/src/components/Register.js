@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api, { setTokens } from '../services/api';
 
+// Componente form di registrazione
 function Register({ onRegister, onSwitchToLogin }) {
   const [email, setEmail] = useState('');
   const [matr, setMatr] = useState('');
@@ -10,13 +11,14 @@ function Register({ onRegister, onSwitchToLogin }) {
   const [courseId, setCourseId] = useState('');
   const [courses, setCourses] = useState([]);
 
-  // Recupera corsi dal backend
+  // Carica lista corsi
   useEffect(() => {
     api.get('/courses/')
       .then(res => setCourses(res.data))
       .catch(err => console.error(err));
   }, []);
 
+  // Gestisce registrazione
   const handleRegister = async () => {
     if (!email || !matr || !firstName || !lastName || !password || !courseId) {
       alert('Compila tutti i campi');
@@ -24,7 +26,7 @@ function Register({ onRegister, onSwitchToLogin }) {
     }
 
     try {
-      // Registrazione utente
+      // Crea nuovo utente
       await api.post('/register/', {
         email,
         matr,
@@ -34,7 +36,7 @@ function Register({ onRegister, onSwitchToLogin }) {
         course: courseId ? parseInt(courseId) : null
       });
 
-      // Registrazione riuscita - reindirizza al login
+      // Successo - vai al login
       alert('Registrazione completata! Ora puoi effettuare il login.');
       onSwitchToLogin();
 

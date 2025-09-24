@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 
+// Pagina di login con autenticazione JWT
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -10,6 +11,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  // Gestisce submit form login
   const handleLogin = async () => {
     if (!email || !password) {
       alert('Compila tutti i campi');
@@ -18,9 +20,11 @@ function LoginPage() {
 
     setLoading(true);
     try {
+      // Autenticazione JWT
       const res = await api.post('/token/', { email, password });
       login(res.data.access, res.data.refresh);
       
+      // Redirect alla dashboard
       navigate('/dashboard');
     } catch (err) {
       alert('Login fallito');

@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { setTokens } from '../services/api';
 
+// Hook personalizzato per gestione autenticazione JWT
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Verifica validità token salvati
   const checkAuth = () => {
     const access = localStorage.getItem('accessToken');
     const refresh = localStorage.getItem('refreshToken');
     
-    // Controlla che i token esistano, non siano 'null', e non siano stringhe vuote
+    // Controlla esistenza e validità token
     const isValidAccess = access && access !== 'null' && access.trim() !== '';
     const isValidRefresh = refresh && refresh !== 'null' && refresh.trim() !== '';
     
@@ -17,6 +19,7 @@ export function useAuth() {
       setTokens(access, refresh);
       setIsAuthenticated(true);
     } else {
+      // Pulisce token non validi
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       setTokens(null, null);
@@ -25,6 +28,7 @@ export function useAuth() {
     setLoading(false);
   };
 
+  // Salva token dopo login
   const login = (accessToken, refreshToken) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
@@ -32,6 +36,7 @@ export function useAuth() {
     setIsAuthenticated(true);
   };
 
+  // Rimuove token e logout
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -39,8 +44,9 @@ export function useAuth() {
     setIsAuthenticated(false);
   };
 
+  // Controlla auth all'avvio
   useEffect(() => {
-    // Piccolo delay per assicurarsi che il componente sia montato
+    // Delay per assicurare montaggio componente
     setTimeout(() => {
       checkAuth();
     }, 100);

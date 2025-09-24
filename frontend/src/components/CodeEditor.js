@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
+// Componente editor Monaco per codice C/C++
 function CodeEditor({ exercise, onCodeChange }) {
   const [code, setCode] = useState('');
 
-  // Aggiorna il codice quando cambia l'esercizio selezionato
+  // Carica template funzione quando cambia esercizio
   useEffect(() => {
     if (exercise) {
-      // Inserisce la firma della funzione + commento (da backend)
       setCode(exercise.signature || '');
     }
   }, [exercise]);
 
+  // Notifica cambiamenti codice al componente padre
   const handleEditorChange = (value) => {
     setCode(value);
     onCodeChange(value);
@@ -19,7 +20,8 @@ function CodeEditor({ exercise, onCodeChange }) {
 
   return (
     <div className="space-y-4">
-      {/* Exercise Description */}
+      
+      {/* Consegna esercizio */}
       {exercise && exercise.comment && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start">
@@ -36,7 +38,7 @@ function CodeEditor({ exercise, onCodeChange }) {
         </div>
       )}
 
-      {/* Code Editor */}
+      {/* Editor Monaco */}
       <div className="border border-gray-300 rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-4 py-2 border-b border-gray-300">
           <div className="flex items-center justify-between">
@@ -76,7 +78,7 @@ function CodeEditor({ exercise, onCodeChange }) {
         </div>
       </div>
 
-      {/* Code Info */}
+      {/* Info codice */}
       <div className="flex items-center justify-between text-sm text-gray-600">
         <div className="flex items-center space-x-4">
           <span className="flex items-center">

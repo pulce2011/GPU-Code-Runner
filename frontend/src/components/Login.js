@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import api, { setTokens } from '../services/api';
 
+// Componente form di login
 function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // Gestisce submit form
   const handleLogin = async (e) => {
-    e.preventDefault(); // previene il refresh della pagina
+    e.preventDefault();
     try {
-      // POST al backend /api/token/
+      // Autenticazione JWT
       const res = await api.post('/token/', { email, password });
 
-      // Salva token in api.js e localStorage
+      // Salva token e notifica padre
       setTokens(res.data.access, res.data.refresh);
-
-      // Notifica App.js con i token
       onLogin(res.data.access, res.data.refresh);
     } catch (err) {
       alert('Login fallito: controlla email/password');

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import api from '../services/api';
 
+// Componente pulsante per esecuzione codice
 function RunButton({ code, onOutputChange }) {
   const [loading, setLoading] = useState(false);
 
+  // Esegue codice sul backend
   const handleRun = async () => {
     if (!code) return;
 
@@ -14,7 +16,7 @@ function RunButton({ code, onOutputChange }) {
         stdout: res.data.stdout,
         stderr: res.data.stderr,
       };
-      // Notifica il parent dei risultati
+      // Notifica risultati al padre
       if (onOutputChange) {
         onOutputChange(newOutput);
       }
@@ -45,7 +47,7 @@ function RunButton({ code, onOutputChange }) {
       ) : (
         <>
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           Esegui Codice
         </>

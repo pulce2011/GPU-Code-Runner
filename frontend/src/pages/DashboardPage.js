@@ -6,6 +6,7 @@ import RunButton from '../components/RunButton';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 
+// Pagina principale dashboard con editor e esecuzione codice
 function DashboardPage() {
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [selectedCode, setSelectedCode] = useState('');
@@ -15,7 +16,7 @@ function DashboardPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  // Recupera le informazioni dell'utente
+  // Carica informazioni utente all'avvio
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
@@ -31,18 +32,20 @@ function DashboardPage() {
     fetchUserInfo();
   }, []);
 
+  // Gestisce logout e redirect
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  // Gestisce output esecuzione codice
   const handleExecutionOutput = (output) => {
     setExecutionOutput(output);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header con logout */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -95,7 +98,7 @@ function DashboardPage() {
           )}
         </div>
 
-        {/* Exercise Selection */}
+        {/* Selezione esercizi */}
         <div className="mb-8">
           <div className="card">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Seleziona Esercizio</h3>
@@ -103,10 +106,10 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* Exercise Details and Editor */}
+        {/* Editor e esecuzione */}
         {selectedExercise && (
           <>
-            {/* Code Editor */}
+            {/* Editor Monaco */}
             <div className="card mb-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Editor di Codice</h3>
               <CodeEditor
@@ -115,14 +118,14 @@ function DashboardPage() {
               />
             </div>
 
-            {/* Run Button */}
+            {/* Pulsante esecuzione */}
             <div className="flex justify-end mb-8">
               <RunButton code={selectedCode} onOutputChange={handleExecutionOutput} />
             </div>
           </>
         )}
 
-        {/* Execution Results */}
+        {/* Risultati esecuzione */}
         {executionOutput && (executionOutput.stdout || executionOutput.stderr) && (
           <div className="card">
             <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
@@ -133,7 +136,7 @@ function DashboardPage() {
             </h3>
             
             <div className="space-y-4">
-              {/* Standard Output */}
+              {/* Output standard */}
               {executionOutput.stdout && (
                 <div>
                   <div className="flex items-center mb-2">
@@ -146,7 +149,7 @@ function DashboardPage() {
                 </div>
               )}
 
-              {/* Error Output */}
+              {/* Output errori */}
               {executionOutput.stderr && (
                 <div>
                   <div className="flex items-center mb-2">

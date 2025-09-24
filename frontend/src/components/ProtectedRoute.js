@@ -1,26 +1,28 @@
 import { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
+// Componente per proteggere route autenticate
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
+  // Redirect al login se non autenticato
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       window.location.href = '/login';
     }
   }, [isAuthenticated, loading]);
 
-  // Mostra loading mentre controlla l'autenticazione
+  // Loading durante controllo auth
   if (loading) {
     return <div style={{ textAlign: 'center', marginTop: '50px' }}>Caricamento...</div>;
   }
 
-  // Se non autenticato, mostra nulla (il redirect è gestito da useEffect)
+  // Redirect in corso
   if (!isAuthenticated) {
     return <div style={{ textAlign: 'center', marginTop: '50px' }}>Reindirizzamento al login...</div>;
   }
 
-  // Se autenticato, mostra il contenuto protetto
+  // Renderizza contenuto protetto
   return children;
 }
 

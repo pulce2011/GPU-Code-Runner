@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
+// Componente per selezione esercizi dal backend
 function ExerciseSelector({ onSelect }) {
   const [exercises, setExercises] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Recupera la lista degli esercizi all'avvio del componente
+  // Carica esercizi all'avvio
   useEffect(() => {
     const fetchExercises = async () => {
       try {
@@ -23,7 +24,7 @@ function ExerciseSelector({ onSelect }) {
     fetchExercises();
   }, []);
 
-  // Quando l'utente seleziona un esercizio
+  // Gestisce selezione esercizio
   const handleChange = (e) => {
     const id = e.target.value;
     setSelectedId(id);
@@ -32,6 +33,7 @@ function ExerciseSelector({ onSelect }) {
     onSelect(exercise);
   };
 
+  // Loading spinner
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -67,6 +69,7 @@ function ExerciseSelector({ onSelect }) {
         </select>
       </div>
       
+      {/* Messaggio nessun esercizio */}
       {exercises.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
