@@ -36,8 +36,8 @@ GPU Code Runner è un'applicazione web che permette agli studenti di:
 ```bash
 python -m venv venv
 source venv/bin/activate
-cd backend
 pip install -r requirements.txt
+cd backend
 python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser
