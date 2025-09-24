@@ -1,59 +1,47 @@
 # GPU Code Runner
 
-Sistema di valutazione esercizi di programmazione sviluppato per la tesi di laurea.
-
 ## 🎯 Panoramica
 
-GPU Code Runner è un'applicazione web moderna che permette agli studenti di programmazione di:
-- Registrarsi e autenticarsi nel sistema
-- Selezionare esercizi di programmazione C/C++
+GPU Code Runner è un'applicazione web che permette agli studenti di:
+- Registrarsi e autenticarsi nel sistema con email e password
+- Selezionare esercizi di programmazione C/C++ basati sul proprio corso di laurea
 - Scrivere e testare codice in un editor integrato
-- Visualizzare i risultati dell'esecuzione in tempo reale
+- Visualizzare i risultati dell'esecuzione in tempo reale tramite simulazione GPU
 
 ## 🛠️ Tecnologie Utilizzate
 
 ### Backend
 - **Django 5.2.6** - Framework web Python
 - **Django REST Framework** - API REST
-- **JWT Authentication** - Autenticazione sicura
+- **JWT Authentication** (SimpleJWT) - Autenticazione sicura
 - **SQLite** - Database di sviluppo
 - **CORS** - Gestione cross-origin requests
+- **Bash Scripting** - Simulazione esecuzione GPU
 
 ### Frontend
-- **React 18** - Libreria UI
-- **React Router** - Navigazione tra pagine
-- **Tailwind CSS** - Framework CSS per design moderno e professionale
-- **Monaco Editor** - Editor di codice integrato
-- **Axios** - Client HTTP
-
-## 🎨 Design
-
-L'applicazione utilizza un design formale e professionale adatto per una presentazione accademica:
-
-- **Palette colori**: Blu primario (#3b82f6) con grigi neutri
-- **Tipografia**: Font Inter per leggibilità ottimale
-- **Layout**: Design responsive con componenti card-based
-- **UX**: Interfaccia intuitiva con feedback visivi chiari
+- **React 19.1.1** - Libreria UI moderna
+- **React Router DOM 7.9.1** - Navigazione tra pagine
+- **Tailwind CSS 3.4.17** - Framework CSS per design moderno e professionale
+- **Monaco Editor 4.7.0** - Editor di codice integrato con syntax highlighting
+- **Axios 1.12.2** - Client HTTP per comunicazione con API
 
 ## 🚀 Installazione e Avvio
 
 ### Prerequisiti
 - Python 3.8+
 - Node.js 18+
-- npm o yarn
+- npm
 
 ### Backend
 ```bash
-cd backend
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# oppure
-venv\Scripts\activate  # Windows
-
+source venv/bin/activate
+cd backend
 pip install -r requirements.txt
+python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser
-python manage.py runserver
+python manage.py runserver 0.0.0.0:8000
 ```
 
 ### Frontend
@@ -63,119 +51,80 @@ npm install
 npm start
 ```
 
-## 📁 Struttura del Progetto
-
-```
-GPUCodeRunner/
-├── backend/
-│   ├── core/
-│   │   ├── models.py      # Modelli Django
-│   │   ├── views.py       # API endpoints
-│   │   ├── admin.py       # Configurazione admin
-│   │   └── serializers.py # Serializzatori API
-│   ├── backend/
-│   │   └── settings.py    # Configurazione Django
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── pages/         # Pagine principali
-│   │   ├── components/    # Componenti riutilizzabili
-│   │   ├── hooks/         # Custom hooks
-│   │   └── services/      # Servizi API
-│   ├── tailwind.config.js
-│   └── package.json
-└── README.md
-```
-
 ## 🔐 Autenticazione
 
 Il sistema utilizza JWT (JSON Web Tokens) per l'autenticazione:
 - **Access Token**: Valido per 60 minuti
 - **Refresh Token**: Valido per 24 ore
 - **Auto-refresh**: Rinnovo automatico dei token
+- **User Model Personalizzato**: Email come username, matricola unica
 
 ## 📱 Pagine Principali
 
 ### Login (`/login`)
-- Form di accesso con validazione
-- Design pulito e professionale
+- Form di accesso con email e password
 - Link alla registrazione
+- Validazione lato client
 
 ### Registrazione (`/register`)
-- Form completo con tutti i campi necessari
+- Form completo con email, matricola, nome, cognome e password
 - Selezione corso di laurea
 - Validazione lato client e server
 
 ### Dashboard (`/dashboard`)
-- Selezione esercizi disponibili
-- Editor di codice Monaco integrato
+- Selezione esercizi disponibili per il corso dell'utente
+- Editor Monaco con syntax highlighting C/C++
 - Esecuzione e visualizzazione risultati
-- Header con logout
+- Header con informazioni utente e logout
 
 ## 🎯 Funzionalità
 
 ### Gestione Esercizi
 - Caricamento dinamico degli esercizi dal backend
-- Visualizzazione firma funzione e consegna
-- Editor con syntax highlighting C/C++
+- Filtro esercizi per corso di laurea dell'utente
+- Editor Monaco con syntax highlighting
+- Generazione automatica template funzione
 
 ### Esecuzione Codice
 - Invio codice al backend per compilazione
-- Visualizzazione output standard e errori
-- Gestione stati di caricamento
+- Simulazione GPU tramite script bash
+- Visualizzazione stdout e stderr
+- File temporanei per esecuzione sicura
 
 ### Responsive Design
 - Layout adattivo per desktop e mobile
 - Componenti ottimizzati per diverse dimensioni schermo
 
-## 🔧 Configurazione
-
-### Variabili d'Ambiente
-Il progetto supporta file `.env` per la configurazione:
-
-**Backend** (`backend/.env`):
-```
-DEBUG=True
-SECRET_KEY=your-secret-key
-ALLOWED_HOSTS=127.0.0.1,localhost
-CORS_ALLOWED_ORIGINS=http://localhost:3000
-```
-
-**Frontend** (`frontend/.env`):
-```
-REACT_APP_API_BASE_URL=http://127.0.0.1:8000
-REACT_APP_APP_NAME=GPU Code Runner
-```
-
 ## 📊 Modelli Dati
 
 ### User (Utente Personalizzato)
-- Email come username
-- Matricola unica
-- Collegamento al corso di laurea
+- **Email**: Campo unico per login
+- **Matricola**: Campo unico identificativo studente
+- **Nome e Cognome**: Informazioni personali
+- **Course**: Collegamento al corso di laurea
 
 ### Course (Corso)
-- Nome del corso di laurea
-- Collegamento agli esercizi
+- **Nome**: Nome del corso di laurea
+- **Relazione**: Many-to-Many con Exercise
 
 ### Exercise (Esercizio)
-- Nome e tipo di ritorno
-- Parametri JSON
-- Commento/consegna
-- Collegamento ai corsi
+- **Nome**: Nome della funzione
+- **Return Type**: Tipo di ritorno della funzione
+- **Params**: Parametri JSON con tipo e nome
+- **Comment**: Consegna/commento dell'esercizio
+- **Courses**: Collegamento ai corsi (Many-to-Many)
+- **build_signature()**: Metodo per generare template funzione
 
-## 🎓 Caratteristiche per Tesi
+## 🔄 API Endpoints
 
-- **Design Professionale**: Interfaccia formale adatta per presentazioni accademiche
-- **Codice Pulito**: Architettura modulare e ben documentata
-- **Sicurezza**: Autenticazione JWT e validazione dati
-- **Responsive**: Funziona su tutti i dispositivi
-- **Documentazione**: Codice commentato e README completo
+### Autenticazione
+- `POST /api/auth/register/` - Registrazione utente
+- `POST /api/auth/login/` - Login utente
+- `GET /api/auth/user/` - Informazioni utente corrente
 
-## 🤝 Contributi
+### Esercizi
+- `GET /api/exercises/` - Lista esercizi per corso utente
+- `GET /api/courses/` - Lista corsi disponibili
 
-Questo progetto è stato sviluppato per la tesi di laurea. Per eventuali miglioramenti o correzioni, contattare l'autore.
-
-## 📄 Licenza
-
-Progetto accademico - Tutti i diritti riservati.
+### Esecuzione
+- `POST /api/run/` - Esecuzione codice C/C++

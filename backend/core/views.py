@@ -58,7 +58,7 @@ class RunExerciseView(views.APIView):
     def post(self, request):
         code = request.data.get('code')
         if not code:
-            return Response({'error': 'body is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'code is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Salva codice su file temporaneo
