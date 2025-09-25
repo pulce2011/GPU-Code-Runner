@@ -39,7 +39,6 @@ function LoginPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">GPU Code Runner</h1>
-          <p className="text-sm text-gray-600">Sistema di valutazione esercizi di programmazione</p>
         </div>
         <h2 className="mt-6 text-center text-2xl font-semibold text-gray-900">
           Accedi al tuo account

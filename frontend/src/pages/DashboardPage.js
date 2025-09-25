@@ -51,9 +51,6 @@ function DashboardPage() {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-gray-900">GPU Code Runner</h1>
-              <span className="ml-3 px-3 py-1 text-xs font-medium bg-primary-100 text-primary-800 rounded-full">
-                Sistema di Valutazione
-              </span>
             </div>
             <button 
               onClick={handleLogout}
