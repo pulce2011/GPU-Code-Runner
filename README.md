@@ -81,7 +81,7 @@ python manage.py runserver 0.0.0.0:8000
    - Effettua l'accesso con le credenziali dell'utente ```superuser```
    - Gestisci Corsi, Esercizi ed Utenti tramite l'interfaccia Django
 
-8. **Installa le dipendenze React (frontend)**
+8. **Installa le dipendenze React (frontend):**
 ```bash
 cd frontend
 npm install
