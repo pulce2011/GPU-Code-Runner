@@ -114,6 +114,7 @@ class Task(models.Model):
     
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE)
+    code = models.TextField(default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
@@ -142,7 +143,7 @@ class Task(models.Model):
     def complete(self, stdout='', stderr=''):
         self.status = 'completed'
         self.finished_at = timezone.now()
-        if started_at is not None:
+        if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
         self.stdout = stdout
         self.stderr = stderr
@@ -152,7 +153,7 @@ class Task(models.Model):
     def fail(self, stderr=''):
         self.status = 'failed'
         self.finished_at = timezone.now()
-        if started_at is not None:
+        if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
         self.stderr = stderr
         self.save()
@@ -161,7 +162,7 @@ class Task(models.Model):
     def interrupt(self):
         self.status = 'interrupted'
         self.finished_at = timezone.now()
-        if started_at is not None:
+        if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
         self.stderr = 'Task interrotto: crediti esauriti'
         self.save()
