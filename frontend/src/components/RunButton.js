@@ -2,32 +2,116 @@ import { useState } from 'react';
 import api from '../services/api';
 
 // Componente pulsante per esecuzione codice
-function RunButton({ code, onOutputChange }) {
+function RunButton({ code, onOutputChange, onCreditsUpdate, exerciseId }) {
   const [loading, setLoading] = useState(false);
 
   // Esegue codice sul backend
   const handleRun = async () => {
-    if (!code) return;
+    if (!code || !exerciseId) return;
 
     setLoading(true);
     try {
-      const res = await api.post('/run/', { code });
-      const newOutput = {
-        stdout: res.data.stdout,
-        stderr: res.data.stderr,
-      };
-      // Notifica risultati al padre
-      if (onOutputChange) {
-        onOutputChange(newOutput);
+      const res = await api.post('/run/', { 
+        code: code,
+        exercise_id: exerciseId 
+      });
+      
+      // Gestisce la nuova risposta con task_id
+      if (res.data.task_id) {
+        // Lavoro avviato con successo
+        const newOutput = {
+          stdout: `Lavoro avviato con successo!\nTask ID: ${res.data.task_id}\nStatus: ${res.data.status}\nCrediti rimanenti: ${res.data.credits_remaining}`,
+          stderr: '',
+        };
+        
+        // Notifica aggiornamento crediti
+        if (onCreditsUpdate) {
+          onCreditsUpdate(res.data.credits_remaining);
+        }
+        
+        // Notifica risultati al padre
+        if (onOutputChange) {
+          onOutputChange(newOutput);
+        }
+        
+        // Polling per ottenere i risultati del task
+        pollTaskStatus(res.data.task_id);
+      } else {
+        // Risposta legacy (per compatibilità)
+        const newOutput = {
+          stdout: res.data.stdout,
+          stderr: res.data.stderr,
+        };
+        if (onOutputChange) {
+          onOutputChange(newOutput);
+        }
       }
     } catch (err) {
       console.error(err);
-      const errorOutput = { stdout: '', stderr: err.message };
+      let errorMessage = err.message;
+      
+      // Gestisce errori specifici per crediti insufficienti
+      if (err.response?.status === 402) {
+        errorMessage = `Crediti insufficienti! Crediti disponibili: ${err.response.data.credits_available}`;
+      }
+      
+      const errorOutput = { stdout: '', stderr: errorMessage };
       if (onOutputChange) {
         onOutputChange(errorOutput);
       }
     }
     setLoading(false);
+  };
+
+  // Polling per ottenere i risultati del task
+  const pollTaskStatus = async (taskId) => {
+    const maxAttempts = 30; // 30 tentativi (30 secondi)
+    let attempts = 0;
+    
+    const poll = async () => {
+      try {
+        const res = await api.get(`/tasks/${taskId}/`);
+        const task = res.data;
+        
+        if (task.status === 'completed' || task.status === 'failed' || task.status === 'interrupted') {
+          // Task completato
+          const newOutput = {
+            stdout: task.stdout || '',
+            stderr: task.stderr || '',
+          };
+          if (onOutputChange) {
+            onOutputChange(newOutput);
+          }
+          return;
+        }
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 1000); // Riprova dopo 1 secondo
+        } else {
+          // Timeout
+          const timeoutOutput = {
+            stdout: '',
+            stderr: 'Timeout: impossibile ottenere i risultati del lavoro',
+          };
+          if (onOutputChange) {
+            onOutputChange(timeoutOutput);
+          }
+        }
+      } catch (err) {
+        console.error('Errore nel polling del task:', err);
+        const errorOutput = {
+          stdout: '',
+          stderr: 'Errore nel recupero dei risultati del lavoro',
+        };
+        if (onOutputChange) {
+          onOutputChange(errorOutput);
+        }
+      }
+    };
+    
+    // Inizia il polling dopo 1 secondo
+    setTimeout(poll, 1000);
   };
 
   return (
