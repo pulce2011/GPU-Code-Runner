@@ -2,5 +2,7 @@
 # simulate_gpu.sh
 # $1 = percorso file codice da eseguire (temporaneo)
 
-echo $1
-echo $1 >&2
+echo "Avvio simulazione GPU..."
+sleep 1
+echo "Simulazione completata"
+echo "File: $1"
