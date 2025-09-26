@@ -46,6 +46,10 @@ class ExerciseListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        
+        if user.is_superuser:
+            return Exercise.objects.all()
+        
         if user.course:
             return Exercise.objects.filter(courses=user.course)
         return Exercise.objects.none()

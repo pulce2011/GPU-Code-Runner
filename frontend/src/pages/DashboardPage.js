@@ -80,7 +80,11 @@ function DashboardPage() {
             <>
               <h2 className="text-3xl font-semibold text-gray-900 mb-2">
                 Benvenuto, {userInfo.last_name} {userInfo.first_name} <span style={{ fontSize: '14px' }}>[MATR. {userInfo.matr}]</span>
-                {userInfo.course_name && (
+                {userInfo.is_superuser ? (
+                  <span className="block text-sm text-gray-500 mt-1">
+                    Utente amministratore
+                  </span>
+                ) : userInfo.course_name && (
                   <span className="block text-sm text-gray-500 mt-1">
                     Corso: {userInfo.course_name}
                   </span>
