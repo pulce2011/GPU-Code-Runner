@@ -141,20 +141,25 @@ class RunExerciseView(views.APIView):
             task.save()
 
             # Loop di controllo crediti durante l'esecuzione
+            credits_used = 0
             while process.poll() is None:
                 time.sleep(1)
                 task.user.refresh_from_db()
                 
-                if task.user.credits <= 0:
+                # Deduce 1 credito per secondo
+                if not task.user.reduce_credits(1):
+                    # Se non ha abbastanza crediti, interrompe il processo
                     process.terminate()
                     task.interrupt()
                     return
-                
-                if task.user.credits > 0:
-                    task.user.reduce_credits(1)
+                credits_used += 1
 
             # Se arriva qui, il processo è terminato normalmente
             stdout, stderr = process.communicate()
+            
+            # Aggiorna i crediti utilizzati
+            task.credits_cost = credits_used + 1  # +1 per il credito iniziale
+            task.save()
             
             # Controlla se è stato interrotto o completato
             if process.returncode == 0:
@@ -170,29 +175,27 @@ class RunExerciseView(views.APIView):
 
         except Exception as e:
             task.fail(f'Errore durante l\'esecuzione: {str(e)}')
+            
 
+#Lista task dell'utente
+class TaskListView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-### Commentati per ora per evitare di aggiungere troppe API
-
-# Lista task dell'utente
-# class TaskListView(views.APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-# 
-#     def get(self, request):
-#         user = request.user
-#         tasks = Task.objects.filter(user=user).order_by('-created_at')[:10]
-#         serializer = TaskSerializer(tasks, many=True)
-#         return Response(serializer.data)
+    def get(self, request):
+        user = request.user
+        tasks = Task.objects.filter(user=user).order_by('-created_at')[:10]
+        serializer = TaskSerializer(tasks, many=True)
+        return Response(serializer.data)
 
 
 # Dettagli di un task specifico
-# class TaskDetailView(views.APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-# 
-#     def get(self, request, task_id):
-#         try:
-#             task = Task.objects.get(id=task_id, user=request.user)
-#             serializer = TaskSerializer(task)
-#             return Response(serializer.data)
-#         except Task.DoesNotExist:
-#             return Response({'error': 'Task non trovato'}, status=status.HTTP_404_NOT_FOUND)
+class TaskDetailView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+ 
+    def get(self, request, task_id):
+        try:
+            task = Task.objects.get(id=task_id, user=request.user)
+            serializer = TaskSerializer(task)
+            return Response(serializer.data)
+        except Task.DoesNotExist:
+            return Response({'error': 'Task non trovato'}, status=status.HTTP_404_NOT_FOUND)
