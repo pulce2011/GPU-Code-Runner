@@ -101,7 +101,7 @@ class Exercise(models.Model):
             return signature_line
 
 
-# Modello per rappresent un task (Richiesta di esecuzione di un esercizio)
+# Modello per rappresentare un task (Richiesta di esecuzione di un esercizio)
 class Task(models.Model):
     
     STATUS_CHOICES = [
