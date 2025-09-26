@@ -103,8 +103,7 @@ class RunExerciseView(views.APIView):
             return Response({
                 'task_id': task.id,
                 'status': task.status,
-                'message': 'Lavoro avviato con successo',
-                'credits_remaining': user.credits - 1
+                'message': 'Lavoro avviato con successo'
             })
             
         except Exercise.DoesNotExist:
@@ -115,11 +114,6 @@ class RunExerciseView(views.APIView):
     def _execute_task(self, task):
         """Esegue il task in background con controllo crediti"""
         try:
-            # Sottrae i crediti all'inizio
-            if not task.user.reduce_credits(task.credits_cost):
-                task.fail('Crediti insufficienti')
-                return
-
             #Avvia il task
             task.start()
 
@@ -141,7 +135,7 @@ class RunExerciseView(views.APIView):
             task.save()
 
             # Loop di controllo crediti durante l'esecuzione
-            credits_used = 0
+            start_time = time.time()
             while process.poll() is None:
                 time.sleep(1)
                 task.user.refresh_from_db()
@@ -152,14 +146,19 @@ class RunExerciseView(views.APIView):
                     process.terminate()
                     task.interrupt()
                     return
-                credits_used += 1
 
             # Se arriva qui, il processo è terminato normalmente
             stdout, stderr = process.communicate()
             
-            # Aggiorna i crediti utilizzati
-            task.credits_cost = credits_used + 1  # +1 per il credito iniziale
+            # Calcola i crediti utilizzati arrotondati per difetto
+            end_time = time.time()
+            total_seconds = end_time - start_time
+            credits_used = max(1, int(total_seconds))  # Minimo 1 credito, arrotonda per difetto
+            task.credits_cost = credits_used
             task.save()
+            
+            # Deduce i crediti calcolati
+            task.user.reduce_credits(credits_used)
             
             # Controlla se è stato interrotto o completato
             if process.returncode == 0:

@@ -19,15 +19,10 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, exerc
       // Gestisce la nuova risposta con task_id
       if (res.data.task_id) {
         // Lavoro avviato con successo
-        const newOutput = {
-          stdout: `Lavoro avviato con successo!\nTask ID: ${res.data.task_id}\nStatus: ${res.data.status}\nCrediti rimanenti: ${res.data.credits_remaining}`,
+        const newOutput = { 
+          stdout: `Lavoro avviato con successo!\nTask ID: ${res.data.task_id}\nStatus: ${res.data.status}`,
           stderr: '',
         };
-        
-        // Notifica aggiornamento crediti
-        if (onCreditsUpdate) {
-          onCreditsUpdate(res.data.credits_remaining);
-        }
         
         // Notifica risultati al padre
         if (onOutputChange) {
