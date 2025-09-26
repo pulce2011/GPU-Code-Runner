@@ -12,13 +12,13 @@ class CourseAdmin(admin.ModelAdmin):
 # Configurazione admin per gestire gli utenti con email e matricola
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['email', 'matr', 'first_name', 'last_name', 'course']
+    list_display = ['email', 'matr', 'first_name', 'last_name', 'course', 'credits']
     list_filter = ['course', 'is_active', 'is_staff']
     search_fields = ['email', 'matr', 'first_name', 'last_name']
     ordering = ['email']
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'matr', 'course')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'matr', 'course', 'credits')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
