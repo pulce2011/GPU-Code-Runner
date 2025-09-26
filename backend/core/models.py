@@ -59,9 +59,13 @@ class User(AbstractUser):
         return f"{self.first_name} {self.last_name} ({self.matr})"
     
     def has_credits(self, amount=1):
+        if self.is_superuser or self.is_staff:
+            return True
         return self.credits >= amount
     
     def reduce_credits(self, amount=1):
+        if self.is_superuser or self.is_staff:
+            return True
         if self.has_credits(amount):
             self.credits -= amount
             self.save()
