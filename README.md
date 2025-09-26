@@ -65,7 +65,7 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-5. **Popola il database con dati di esempio (opzionale):**
+5. **Popola il database con dati di esempio:**
 ```bash
 python manage.py generate_courses
 python manage.py generate_exercises
@@ -78,8 +78,19 @@ python manage.py runserver 0.0.0.0:8000
 
 7. **Accedi all'interfaccia amministrativa:**
    - Vai su `http://localhost:8000/admin`
-   - Effettua l'accesso con le credenziali dell'utente superuser
+   - Effettua l'accesso con le credenziali dell'utente ```uperuser```
    - Gestisci Corsi, Esercizi ed Utenti tramite l'interfaccia Django
+
+8. **Installa le dipendenze React (frontend)**
+```bash
+cd frontend
+npm install
+```
+
+9. **Avvia il server frontend:**
+```bash
+npm start
+```
 
 ### Comandi di gestione database
 
@@ -94,15 +105,14 @@ python manage.py clear_exercises
 
 #### Backend
 ```bash 
+source venv/bin/activate
 cd backend
-source ../venv/bin/activate  # Attiva l'ambiente virtuale
 python manage.py runserver 0.0.0.0:8000
 ```
 
 #### Frontend
 ```bash 
 cd frontend
-npm install  # Solo la prima volta
 npm start
 ```
 
