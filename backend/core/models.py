@@ -47,6 +47,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     matr = models.CharField(max_length=20, unique=True)
     course = models.ForeignKey(Course, null=True, blank=True, on_delete=models.SET_NULL)
+    credits = models.IntegerField(default=100)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['matr', 'first_name', 'last_name']
@@ -55,6 +56,16 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.matr})"
+    
+    def has_credits(self, amount=1):
+        return self.credits >= amount
+    
+    def reduce_credits(self, amount=1):
+        if self.has_credits(amount):
+            self.credits -= amount
+            self.save()
+            return True
+        return False
 
 
 # Modello per esercizi di programmazione con parametri JSON e firma funzione
