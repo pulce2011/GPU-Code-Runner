@@ -78,7 +78,7 @@ python manage.py runserver 0.0.0.0:8000
 
 7. **Accedi all'interfaccia amministrativa:**
    - Vai su `http://localhost:8000/admin`
-   - Effettua l'accesso con le credenziali dell'utente ```uperuser```
+   - Effettua l'accesso con le credenziali dell'utente ```superuser```
    - Gestisci Corsi, Esercizi ed Utenti tramite l'interfaccia Django
 
 8. **Installa le dipendenze React (frontend)**
