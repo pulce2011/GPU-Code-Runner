@@ -35,3 +35,18 @@ class ExerciseAdmin(admin.ModelAdmin):
     def get_courses(self, obj):
         return ", ".join([course.name for course in obj.courses.all()])
     get_courses.short_description = 'Courses'
+    
+
+# Configurazione admin per gestire task
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ['user__matr', 'exercise__name', 'status', 'created_at', 'started_at', 'finished_at']
+    list_filter = ['status', 'created_at', 'started_at', 'finished_at', 'user__course', 'user__matr']
+    search_fields = ['user__email', 'user__matr', 'user__first_name', 'user__last_name', 'exercise__name']
+    ordering = ['-created_at']
+    readonly_fields = ['id', 'created_at', 'started_at', 'finished_at', 'total_execution_time', 'stdout', 'stderr', 'process_id', 'credits_cost']
+    fieldsets = (
+        ('Info', {'fields': ('id', 'user', 'exercise', 'status')}),
+        ('Output', {'fields': ('stdout', 'stderr')}),
+        ('Timestamps', {'fields': ('created_at', 'started_at', 'finished_at')}),
+    )
