@@ -103,14 +103,14 @@ python manage.py clear_exercises
 
 ### Avvio dell'applicazione
 
-#### Backend
+#### Backend:
 ```bash 
 source venv/bin/activate
 cd backend
 python manage.py runserver 0.0.0.0:8000
 ```
 
-#### Frontend
+#### Frontend:
 ```bash 
 cd frontend
 npm start
