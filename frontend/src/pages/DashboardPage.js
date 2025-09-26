@@ -111,15 +111,25 @@ function DashboardPage() {
                     )}
                   </h2>
                 </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
+                <div className="bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200 rounded-xl px-6 py-4 shadow-sm">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-slate-100 p-2 rounded-lg">
+                      <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                    </div>
                     <div>
-                      <div className="text-sm text-blue-600 font-medium">Crediti</div>
-                      <div className="text-lg font-bold text-blue-800">
-                        {userInfo.is_superuser || userInfo.is_staff ? '∞' : userInfo.credits}
+                      <div className="text-xs text-slate-600 font-semibold uppercase tracking-wide">Crediti</div>
+                      <div className="text-2xl font-bold text-slate-800">
+                        {userInfo.is_superuser || userInfo.is_staff ? (
+                          <span className="bg-gradient-to-r from-slate-400 to-gray-400 bg-clip-text text-transparent">
+                            ∞
+                          </span>
+                        ) : (
+                          <span className="bg-gradient-to-r from-slate-600 to-gray-600 bg-clip-text text-transparent">
+                            {userInfo.credits}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -227,10 +237,10 @@ function DashboardPage() {
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {taskDetails.status === 'completed' ? 'Completato' :
-                           taskDetails.status === 'failed' ? 'Fallito' :
-                           taskDetails.status === 'interrupted' ? 'Interrotto' :
-                           taskDetails.status === 'running' ? 'In esecuzione' :
-                           'In attesa'}
+                            taskDetails.status === 'failed' ? 'Fallito' :
+                            taskDetails.status === 'interrupted' ? 'Interrotto' :
+                            taskDetails.status === 'running' ? 'In esecuzione' :
+                            'In attesa'}
                         </span>
                       </div>
                       <div>
