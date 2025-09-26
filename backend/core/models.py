@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.utils import timezone
 
 
 # Manager personalizzato per creare utenti con email e matricola invece di username
@@ -94,3 +95,69 @@ class Exercise(models.Model):
             return f"{comment_block}\n\n{signature_line} {'{'}\n\n{'}'}\n"
         else:
             return signature_line
+
+
+# Modello per rappresent un task (Richiesta di esecuzione di un esercizio)
+class Task(models.Model):
+    
+    STATUS_CHOICES = [
+        ('pending', 'In attesa'),
+        ('running', 'In esecuzione'),
+        ('completed', 'Completato'),
+        ('failed', 'Fallito'),
+        ('interrupted', 'Interrotto'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    total_execution_time = models.DurationField(null=True, blank=True)
+    stdout = models.TextField(blank=True)
+    stderr = models.TextField(blank=True)
+    credits_cost = models.IntegerField(default=1)
+    process_id = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Task {self.id} - {self.user.matr} - {self.status}"
+    
+    #Avvia il task
+    def start(self):
+        self.status = 'running'
+        self.started_at = timezone.now()
+        self.save()
+
+    #Segna il task come in attesa
+    def pending(self):
+        self.status = 'pending'
+        self.save()
+    
+    #Completa il task con successo
+    def complete(self, stdout='', stderr=''):
+        self.status = 'completed'
+        self.finished_at = timezone.now()
+        if started_at is not None:
+            self.total_execution_time = self.finished_at - self.started_at
+        self.stdout = stdout
+        self.stderr = stderr
+        self.save()
+    
+    #Segna il task come fallito
+    def fail(self, stderr=''):
+        self.status = 'failed'
+        self.finished_at = timezone.now()
+        if started_at is not None:
+            self.total_execution_time = self.finished_at - self.started_at
+        self.stderr = stderr
+        self.save()
+    
+    #Interrompe il task per crediti esauriti
+    def interrupt(self):
+        self.status = 'interrupted'
+        self.finished_at = timezone.now()
+        if started_at is not None:
+            self.total_execution_time = self.finished_at - self.started_at
+        self.stderr = 'Task interrotto: crediti esauriti'
+        self.save()
