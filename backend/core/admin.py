@@ -40,7 +40,7 @@ class ExerciseAdmin(admin.ModelAdmin):
 # Configurazione admin per gestire i task
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ['user__matr', 'exercise__name', 'status', 'created_at', 'started_at', 'finished_at']
+    list_display = ['id', 'user__matr', 'exercise__name', 'total_execution_time', 'status', 'created_at', 'started_at', 'finished_at']
     list_filter = ['status', 'created_at', 'started_at', 'finished_at', 'user__course', 'user__matr']
     search_fields = ['user__email', 'user__matr', 'user__first_name', 'user__last_name', 'exercise__name']
     ordering = ['-created_at']
