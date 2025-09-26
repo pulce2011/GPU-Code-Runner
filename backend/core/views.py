@@ -191,7 +191,7 @@ class TaskListView(views.APIView):
 # Dettagli di un task specifico
 class TaskDetailView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
- 
+
     def get(self, request, task_id):
         try:
             task = Task.objects.get(id=task_id, user=request.user)
