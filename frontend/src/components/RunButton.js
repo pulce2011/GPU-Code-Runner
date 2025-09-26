@@ -82,6 +82,14 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, exerc
           if (onTaskDetails) {
             onTaskDetails(task);
           }
+          
+          // Aggiorna i crediti dell'utente dopo il completamento
+          if (onCreditsUpdate && task.credits_cost) {
+            // Calcola i crediti rimanenti (assumendo che i crediti siano stati scalati)
+            // Questo è un'approssimazione - in un'app reale dovresti ottenere i crediti aggiornati dal backend
+            onCreditsUpdate(prevCredits => prevCredits - task.credits_cost);
+          }
+          
           return;
         }
         

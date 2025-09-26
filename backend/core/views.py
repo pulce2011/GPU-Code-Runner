@@ -140,8 +140,8 @@ class RunExerciseView(views.APIView):
                 time.sleep(1)
                 task.user.refresh_from_db()
                 
-                # Deduce 1 credito per secondo
-                if not task.user.reduce_credits(1):
+                # Controlla se ha abbastanza crediti (senza dedurre)
+                if task.user.credits <= 0:
                     # Se non ha abbastanza crediti, interrompe il processo
                     process.terminate()
                     task.interrupt()
@@ -154,11 +154,13 @@ class RunExerciseView(views.APIView):
             end_time = time.time()
             total_seconds = end_time - start_time
             credits_used = max(1, int(total_seconds))  # Minimo 1 credito, arrotonda per difetto
+            
+            # Deduce i crediti calcolati PRIMA di completare il task
+            task.user.reduce_credits(credits_used)
+            
+            # Aggiorna il task con i crediti utilizzati
             task.credits_cost = credits_used
             task.save()
-            
-            # Deduce i crediti calcolati
-            task.user.reduce_credits(credits_used)
             
             # Controlla se è stato interrotto o completato
             if process.returncode == 0:

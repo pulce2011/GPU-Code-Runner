@@ -55,10 +55,19 @@ function DashboardPage() {
 
   // Gestisce aggiornamento crediti
   const handleCreditsUpdate = (newCredits) => {
-    setUserInfo(prev => ({
-      ...prev,
-      credits: newCredits
-    }));
+    if (typeof newCredits === 'function') {
+      // Se è una funzione, usa il callback per calcolare i nuovi crediti
+      setUserInfo(prev => ({
+        ...prev,
+        credits: newCredits(prev.credits)
+      }));
+    } else {
+      // Se è un numero, imposta direttamente
+      setUserInfo(prev => ({
+        ...prev,
+        credits: newCredits
+      }));
+    }
   };
 
   return (
