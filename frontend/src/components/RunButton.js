@@ -2,7 +2,7 @@ import { useState } from 'react';
 import api from '../services/api';
 
 // Componente pulsante per esecuzione codice
-function RunButton({ code, onOutputChange, onCreditsUpdate, exerciseId }) {
+function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, exerciseId }) {
   const [loading, setLoading] = useState(false);
 
   // Esegue codice sul backend
@@ -34,8 +34,10 @@ function RunButton({ code, onOutputChange, onCreditsUpdate, exerciseId }) {
           onOutputChange(newOutput);
         }
         
-        // Polling per ottenere i risultati del task
-        pollTaskStatus(res.data.task_id);
+        // Polling per ottenere i risultati del task (con delay per permettere al backend di salvare)
+        setTimeout(() => {
+          pollTaskStatus(res.data.task_id);
+        }, 1000);
       } else {
         // Risposta legacy (per compatibilità)
         const newOutput = {
@@ -81,6 +83,9 @@ function RunButton({ code, onOutputChange, onCreditsUpdate, exerciseId }) {
           };
           if (onOutputChange) {
             onOutputChange(newOutput);
+          }
+          if (onTaskDetails) {
+            onTaskDetails(task);
           }
           return;
         }

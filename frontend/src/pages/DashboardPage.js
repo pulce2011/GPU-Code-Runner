@@ -13,6 +13,7 @@ function DashboardPage() {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [executionOutput, setExecutionOutput] = useState(null);
+  const [taskDetails, setTaskDetails] = useState(null);
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -41,6 +42,15 @@ function DashboardPage() {
   // Gestisce output esecuzione codice
   const handleExecutionOutput = (output) => {
     setExecutionOutput(output);
+    // Se c'è un nuovo output, nascondi i dettagli del task precedente
+    if (output) {
+      setTaskDetails(null);
+    }
+  };
+
+  // Gestisce i dettagli del task
+  const handleTaskDetails = (details) => {
+    setTaskDetails(details);
   };
 
   // Gestisce aggiornamento crediti
@@ -149,6 +159,7 @@ function DashboardPage() {
               <RunButton 
                 code={selectedCode} 
                 onOutputChange={handleExecutionOutput}
+                onTaskDetails={handleTaskDetails}
                 onCreditsUpdate={handleCreditsUpdate}
                 exerciseId={selectedExercise?.id}
               />
@@ -189,6 +200,88 @@ function DashboardPage() {
                   </div>
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <pre className="text-sm text-red-800 whitespace-pre-wrap font-mono">{executionOutput.stderr}</pre>
+                  </div>
+                </div>
+              )}
+
+              {/* Dettagli Task */}
+              {taskDetails && (
+                <div>
+                  <div className="flex items-center mb-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                    <h4 className="text-sm font-medium text-gray-700">Dettagli Esecuzione</h4>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-blue-800">Task ID:</span>
+                        <span className="ml-2 text-blue-700">{taskDetails.id}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-blue-800">Stato:</span>
+                        <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
+                          taskDetails.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          taskDetails.status === 'failed' ? 'bg-red-100 text-red-800' :
+                          taskDetails.status === 'interrupted' ? 'bg-yellow-100 text-yellow-800' :
+                          taskDetails.status === 'running' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {taskDetails.status === 'completed' ? 'Completato' :
+                           taskDetails.status === 'failed' ? 'Fallito' :
+                           taskDetails.status === 'interrupted' ? 'Interrotto' :
+                           taskDetails.status === 'running' ? 'In esecuzione' :
+                           'In attesa'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-blue-800">Crediti utilizzati:</span>
+                        <span className="ml-2 text-blue-700">{taskDetails.credits_cost}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-blue-800">Tempo totale:</span>
+                        <span className="ml-2 text-blue-700">
+                          {taskDetails.total_execution_time ? 
+                            (() => {
+                              // Converte la stringa duration in secondi:millisecondi
+                              const duration = taskDetails.total_execution_time;
+                              if (typeof duration === 'string') {
+                                // Formato: "0:00:01.123456" o "0:00:01"
+                                const parts = duration.split(':');
+                                if (parts.length === 3) {
+                                  const hours = parseInt(parts[0]) || 0;
+                                  const minutes = parseInt(parts[1]) || 0;
+                                  const seconds = parseFloat(parts[2]) || 0;
+                                  const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                                  const secs = Math.floor(totalSeconds);
+                                  const millisecs = Math.floor((totalSeconds - secs) * 1000);
+                                  return `${secs}:${millisecs.toString().padStart(3, '0')}`;
+                                }
+                              }
+                              return 'N/A';
+                            })() :
+                            'N/A'
+                          }
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-blue-800">Avviato:</span>
+                        <span className="ml-2 text-blue-700">
+                          {taskDetails.started_at ? 
+                            new Date(taskDetails.started_at).toLocaleString('it-IT') : 
+                            'N/A'
+                          }
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-blue-800">Completato:</span>
+                        <span className="ml-2 text-blue-700">
+                          {taskDetails.finished_at ? 
+                            new Date(taskDetails.finished_at).toLocaleString('it-IT') : 
+                            'N/A'
+                          }
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
