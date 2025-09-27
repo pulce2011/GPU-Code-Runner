@@ -29,6 +29,11 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, exerc
           onOutputChange(newOutput);
         }
         
+        // Nascondi i dettagli del task precedente quando ne viene avviato uno nuovo
+        if (onTaskDetails) {
+          onTaskDetails(null);
+        }
+        
         // Polling per ottenere i risultati del task (con delay per permettere al backend di salvare)
         setTimeout(() => {
           pollTaskStatus(res.data.task_id);

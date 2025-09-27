@@ -154,11 +154,12 @@ class Task(models.Model):
         self.save()
     
     #Segna il task come fallito
-    def fail(self, stderr=''):
+    def fail(self, stdout='', stderr=''):
         self.status = 'failed'
         self.finished_at = timezone.now()
         if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
+        self.stdout = stdout
         self.stderr = stderr
         self.message = "Task fallito."
         self.save()

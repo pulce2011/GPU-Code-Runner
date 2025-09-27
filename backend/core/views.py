@@ -165,7 +165,7 @@ class RunExerciseView(views.APIView):
             if process.returncode == 0:
                 task.complete(stdout=stdout.strip(), stderr=stderr.strip())
             else:
-                task.fail(stderr=stderr.strip())
+                task.fail(stdout=stdout.strip(), stderr=stderr.strip())
 
             # Pulisci il file temporaneo
             try:
@@ -174,7 +174,7 @@ class RunExerciseView(views.APIView):
                 pass
 
         except Exception as e:
-            task.fail(stderr=f'Errore durante l\'esecuzione: {str(e)}')
+            task.fail(stdout='', stderr=f'Errore durante l\'esecuzione: {str(e)}')
             
 
 #Lista task dell'utente
