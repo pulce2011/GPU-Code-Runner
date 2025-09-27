@@ -76,8 +76,7 @@ class RunExerciseView(views.APIView):
         # Controllo crediti prima dell'esecuzione
         if not user.has_credits():
             return Response({
-                'error': 'Crediti insufficienti per eseguire il lavoro',
-                'credits_available': user.credits
+                'error': 'Crediti insufficienti.',
             }, status=status.HTTP_402_PAYMENT_REQUIRED)
 
         try:

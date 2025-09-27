@@ -49,7 +49,7 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, exerc
       
       // Gestisce errori specifici per crediti insufficienti
       if (err.response?.status === 402) {
-        errorMessage = `Crediti insufficienti! Crediti disponibili: ${err.response.data.credits_available}`;
+        errorMessage = err.response.data.error
       }
       
       const errorOutput = { stdout: '', stderr: errorMessage };
