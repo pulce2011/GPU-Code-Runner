@@ -174,7 +174,7 @@ class RunExerciseView(views.APIView):
                 pass
 
         except Exception as e:
-            task.fail(f'Errore durante l\'esecuzione: {str(e)}')
+            task.fail(stderr=f'Errore durante l\'esecuzione: {str(e)}')
             
 
 #Lista task dell'utente
