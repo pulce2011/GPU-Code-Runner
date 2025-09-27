@@ -133,11 +133,13 @@ class Task(models.Model):
     def start(self):
         self.status = 'running'
         self.started_at = timezone.now()
+        self.message = "Task in esecuzione..."
         self.save()
 
     #Segna il task come in attesa
     def pending(self):
         self.status = 'pending'
+        self.message = "Task in attesa di esecuzione..."
         self.save()
     
     #Completa il task con successo
@@ -148,6 +150,7 @@ class Task(models.Model):
             self.total_execution_time = self.finished_at - self.started_at
         self.stdout = stdout
         self.stderr = stderr
+        self.message = "Task completato con successo."
         self.save()
     
     #Segna il task come fallito
@@ -157,6 +160,7 @@ class Task(models.Model):
         if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
         self.stderr = stderr
+        self.message = "Task fallito."
         self.save()
     
     #Interrompe il task per crediti esauriti
@@ -165,5 +169,5 @@ class Task(models.Model):
         self.finished_at = timezone.now()
         if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
-        self.stderr = 'Task interrotto: crediti esauriti'
+        self.message = "Task interrotto: crediti esauriti."
         self.save()
