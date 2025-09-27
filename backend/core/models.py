@@ -124,6 +124,7 @@ class Task(models.Model):
     stderr = models.TextField(blank=True)
     credits_cost = models.IntegerField(default=1)
     process_id = models.IntegerField(null=True, blank=True)
+    message = models.TextField(default='', blank=True)
 
     def __str__(self):
         return f"Task {self.id} - {self.user.matr} - {self.status}"
