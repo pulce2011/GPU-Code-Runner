@@ -165,10 +165,12 @@ class Task(models.Model):
         self.save()
     
     #Interrompe il task per crediti esauriti
-    def interrupt(self):
+    def interrupt(self, stdout='', stderr=''):
         self.status = 'interrupted'
         self.finished_at = timezone.now()
         if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
+        self.stdout = stdout
+        self.stderr = stderr
         self.message = "Task interrotto: crediti esauriti."
         self.save()
