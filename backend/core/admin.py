@@ -40,13 +40,13 @@ class ExerciseAdmin(admin.ModelAdmin):
 # Configurazione admin per gestire i task
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user__matr', 'exercise__name', 'total_execution_time', 'status', 'created_at', 'started_at', 'finished_at']
+    list_display = ['id', 'user__matr', 'exercise__name', 'total_execution_time', 'status', 'credits_cost', 'created_at', 'started_at', 'finished_at']
     list_filter = ['status', 'created_at', 'started_at', 'finished_at', 'user__course', 'user__matr']
     search_fields = ['user__email', 'user__matr', 'user__first_name', 'user__last_name', 'exercise__name']
     ordering = ['-created_at']
     readonly_fields = ['id', 'created_at', 'started_at', 'finished_at', 'total_execution_time', 'stdout', 'stderr', 'process_id', 'credits_cost']
     fieldsets = (
-        ('Info', {'fields': ('id', 'user', 'exercise', 'status')}),
-        ('Output', {'fields': ('stdout', 'stderr')}),
+        ('Info', {'fields': ('id', 'user', 'exercise', 'status', 'credits_cost')}),
+        ('Output', {'fields': ('stdout', 'stderr', 'message')}),
         ('Timestamps', {'fields': ('created_at', 'started_at', 'finished_at', 'total_execution_time')}),
     )
