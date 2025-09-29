@@ -75,8 +75,8 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, exerc
         const res = await api.get(`/tasks/${taskId}/`);
         const task = res.data;
         
+        // Task completato
         if (task.status === 'completed' || task.status === 'failed' || task.status === 'interrupted') {
-          // Task completato
           const newOutput = {
             stdout: task.stdout || '',
             stderr: task.stderr || '',
@@ -89,10 +89,14 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, exerc
           }
           
           // Aggiorna i crediti dell'utente dopo il completamento
-          if (onCreditsUpdate && task.credits_cost) {
-            // Calcola i crediti rimanenti (assumendo che i crediti siano stati scalati)
-            // Questo è un'approssimazione - in un'app reale dovresti ottenere i crediti aggiornati dal backend
-            onCreditsUpdate(prevCredits => prevCredits - task.credits_cost);
+          if (onCreditsUpdate) {
+            // Recupera i crediti aggiornati dal database
+            try {
+              const userResponse = await api.get('/user/');
+              onCreditsUpdate(userResponse.data.credits);
+            } catch (error) {
+              console.error('Errore nel recupero dei crediti aggiornati:', error);
+            }
           }
           
           return;
