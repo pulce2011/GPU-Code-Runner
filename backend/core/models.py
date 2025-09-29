@@ -169,5 +169,5 @@ class Task(models.Model):
             self.total_execution_time = self.finished_at - self.started_at
         self.stdout = stdout
         self.stderr = stderr
-        self.message = "Task interrotto: crediti esauriti."
+        self.message = "Task interrotto (crediti esauriti)."
         self.save()
