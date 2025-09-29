@@ -178,7 +178,7 @@ Il sistema utilizza JWT (JSON Web Tokens) per l'autenticazione:
 - Invio codice al backend per compilazione
 - Simulazione GPU tramite script bash (`simulate_gpu.sh`)
 - Esecuzione asincrona con threading
-- Visualizzazione stdout e stderr in tempo reale
+- Visualizzazione stdout e stderr
 - File temporanei per esecuzione sicura
 - Gestione errori di compilazione ed esecuzione
 
@@ -188,7 +188,6 @@ Il sistema utilizza JWT (JSON Web Tokens) per l'autenticazione:
 - **Completed**: Task completato con successo
 - **Failed**: Task fallito
 - **Interrupted**: Task interrotto per crediti esauriti
-- **Insufficient Credits**: Crediti insufficienti per avviare il task
 
 ### Feedback Visivo
 - **Spinner animato** per stati di attesa
@@ -256,29 +255,3 @@ Il sistema utilizza JWT (JSON Web Tokens) per l'autenticazione:
 - Backend: `http://localhost:8000`
 - Frontend: `http://localhost:3000`
 - Admin: `http://localhost:8000/admin`
-
-### Produzione
-Per il deployment in produzione, considera:
-- Configurazione di un database PostgreSQL
-- Impostazione di variabili d'ambiente per sicurezza
-- Configurazione di nginx come reverse proxy
-- Utilizzo di HTTPS con certificati SSL
-
-## 🤝 Contributi
-
-1. Fork del repository
-2. Crea un branch per la tua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit delle modifiche (`git commit -m 'Add some AmazingFeature'`)
-4. Push al branch (`git push origin feature/AmazingFeature`)
-5. Apri una Pull Request
-
-## 📝 Licenza
-
-Questo progetto è distribuito sotto la licenza MIT. Vedi il file `LICENSE` per maggiori informazioni.
-
-## 🆘 Supporto
-
-Per problemi o domande:
-- Apri una issue su GitHub
-- Contatta il team di sviluppo
-- Consulta la documentazione dell'API
