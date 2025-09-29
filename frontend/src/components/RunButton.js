@@ -31,7 +31,7 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
         });
         
         // Avvia polling
-        setTimeout(() => pollTaskStatus(response.data.task_id), 100);
+        setTimeout(() => pollTaskStatus(response.data.task_id), 200);
       } else {
         // Risposta legacy
         onOutputChange?.({
@@ -98,7 +98,7 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
         // Continua polling
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 1000);
+          setTimeout(poll, 200);
         } else {
           onOutputChange?.({
             stdout: '',
@@ -114,7 +114,7 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
       }
     };
     
-    setTimeout(poll, 1000);
+    setTimeout(poll, 200);
   };
 
   return (
