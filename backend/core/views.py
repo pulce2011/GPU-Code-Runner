@@ -3,8 +3,11 @@ import subprocess
 import threading
 import time
 import os
+import select
+from typing import Dict, Any, Optional
 from rest_framework import generics, permissions, status, views
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
 from .models import Exercise, Course, User, Task
 from .serializers import ExerciseSerializer, UserSerializer, CourseSerializer, TaskSerializer
 
@@ -13,7 +16,7 @@ from .serializers import ExerciseSerializer, UserSerializer, CourseSerializer, T
 # AUTHENTICATION & USER MANAGEMENT
 # =============================================================================
 
-# Informazioni utente corrente
+### Informazioni utente corrente ###
 class UserInfoView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -23,7 +26,7 @@ class UserInfoView(views.APIView):
         return Response(serializer.data)
 
 
-# Registrazione utente
+### Registrazione utente ###
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -40,14 +43,14 @@ class RegisterView(generics.CreateAPIView):
 # COURSE & EXERCISE MANAGEMENT
 # =============================================================================
 
-# Lista corsi
+### Lista corsi ###
 class CourseListView(generics.ListAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [permissions.AllowAny]
 
 
-# Lista esercizi filtrati per corso utente loggato
+### Lista esercizi filtrati per corso utente loggato ###
 class ExerciseListView(generics.ListAPIView):
     serializer_class = ExerciseSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -67,42 +70,32 @@ class ExerciseListView(generics.ListAPIView):
 # CODE EXECUTION & TASK MANAGEMENT
 # =============================================================================
 
-# Esecuzione codice con sistema crediti
+### Esecuzione codice con sistema crediti ###
 class RunExerciseView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
-        code = request.data.get('code')
-        exercise_id = request.data.get('exercise_id')
+    def post(self, request) -> Response:
+        # Validazione input
+        validation_error = self._validate_request(request)
+        if validation_error:
+            return validation_error
+        
+        code = request.data['code']
+        exercise_id = request.data['exercise_id']
         user = request.user
-        
-        if not code:
-            return Response({'error': 'code is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if not exercise_id:
-            return Response({'error': 'exercise_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Controllo crediti
         if not user.has_credits():
-            return Response({'error': 'Crediti insufficienti.'}, status=status.HTTP_402_PAYMENT_REQUIRED)
+            return self._error_response('Crediti insufficienti.', status.HTTP_402_PAYMENT_REQUIRED)
 
         try:
             exercise = Exercise.objects.get(id=exercise_id)
             
             if not user.reduce_credits(1):
-                return Response({'error': 'Crediti insufficienti.'}, status=status.HTTP_402_PAYMENT_REQUIRED)
+                return self._error_response('Crediti insufficienti.', status.HTTP_402_PAYMENT_REQUIRED)
             
-            task = Task.objects.create(
-                user=user,
-                exercise=exercise,
-                code=code,
-                credits_cost=1,
-            )
-            
-            task.pending()
-            
-            thread = threading.Thread(target=self._execute_task, args=(task,))
-            thread.daemon = True
-            thread.start()
+            task = self._create_task(user, exercise, code)
+            self._start_task_execution(task)
 
             return Response({
                 'task_id': task.id,
@@ -111,131 +104,207 @@ class RunExerciseView(views.APIView):
             })
             
         except Exercise.DoesNotExist:
-            return Response({'error': 'Esercizio non trovato'}, status=status.HTTP_404_NOT_FOUND)
+            return self._error_response('Esercizio non trovato', status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return self._error_response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    # Valida i dati della richiesta
+    def _validate_request(self, request) -> Optional[Response]:
+        if not request.data.get('code'):
+            return self._error_response('code is required', status.HTTP_400_BAD_REQUEST)
+        
+        if not request.data.get('exercise_id'):
+            return self._error_response('exercise_id is required', status.HTTP_400_BAD_REQUEST)
+        
+        return None
+    
+    # Crea una risposta di errore standardizzata
+    def _error_response(self, message: str, status_code: int) -> Response:
+        return Response({'error': message}, status=status_code)
+    
+    # Crea un nuovo task
+    def _create_task(self, user: User, exercise: Exercise, code: str) -> Task:
+        task = Task.objects.create(
+            user=user,
+            exercise=exercise,
+            code=code,
+            credits_cost=1,
+        )
+        task.pending()
+        return task
+    
+    # Avvia l'esecuzione del task in background
+    def _start_task_execution(self, task: Task) -> None:
+        thread = threading.Thread(target=self._execute_task, args=(task,))
+        thread.daemon = True
+        thread.start()
 
-    def _execute_task(self, task):
+    # Esegue il task in background con controllo crediti
+    def _execute_task(self, task: Task) -> None:
+        tmp_path = None
         try:
             task.start()
-
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as f:
-                f.write(task.code)
-                tmp_path = f.name
-
-            process = subprocess.Popen(
-                ['bash', 'simulate_gpu.sh', tmp_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1
-            )
-            
-            accumulated_stdout = ""
-            accumulated_stderr = ""
+            tmp_path = self._create_temp_file(task.code)
+            process = self._start_process(tmp_path)
             
             task.process_id = process.pid
             task.save()
 
-            start_time = time.time()
-            task_interrupted = False
+            output_data = self._monitor_process(process, task)
             
-            while process.poll() is None and not task_interrupted:
-                time.sleep(1)
-                task.user.refresh_from_db()
-                
-                try:
-                    import select
-                    if select.select([process.stdout], [], [], 0)[0]:
-                        line = process.stdout.readline()
-                        if line:
-                            accumulated_stdout += line
-                    if select.select([process.stderr], [], [], 0)[0]:
-                        line = process.stderr.readline()
-                        if line:
-                            accumulated_stderr += line
-                except:
-                    pass
-                
-                current_time = time.time()
-                elapsed_seconds = current_time - start_time
-                
-                if elapsed_seconds >= 1.0:
-                    credits_needed = int(elapsed_seconds)
-                    if task.user.credits >= credits_needed - task.credits_cost:
-                        credits_to_deduct = credits_needed - task.credits_cost
-                        if credits_to_deduct > 0:
-                            task.user.reduce_credits(credits_to_deduct)
-                            task.credits_cost = credits_needed
-                            task.save()
-                    else:
-                        process.terminate()
-                        try:
-                            process.wait(timeout=0.5)
-                        except subprocess.TimeoutExpired:
-                            process.kill()
-                        
-                        try:
-                            remaining_stdout, remaining_stderr = process.communicate(timeout=0.5)
-                            accumulated_stdout += remaining_stdout
-                            accumulated_stderr += remaining_stderr
-                        except subprocess.TimeoutExpired:
-                            pass
-                        
-                        task.interrupt(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
-                        task_interrupted = True
-                        break
-
-            if task_interrupted:
-                return
+            if not output_data['interrupted']:
+                self._finalize_task(task, process, output_data)
             
-            remaining_stdout, remaining_stderr = process.communicate()
-            accumulated_stdout += remaining_stdout
-            accumulated_stderr += remaining_stderr
+        except Exception as e:
+            task.fail(stdout='', stderr=f'Errore durante l\'esecuzione: {str(e)}')
+        finally:
+            self._cleanup_temp_file(tmp_path)
+    
+    # Crea un file temporaneo con il codice
+    def _create_temp_file(self, code: str) -> str:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as f:
+            f.write(code)
+            return f.name
+    
+    # Avvia il processo di esecuzione
+    def _start_process(self, tmp_path: str) -> subprocess.Popen:
+        return subprocess.Popen(
+            ['bash', 'simulate_gpu.sh', tmp_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1
+        )
+    
+    # Monitora il processo e gestisce i crediti
+    def _monitor_process(self, process: subprocess.Popen, task: Task) -> Dict[str, Any]:
+        accumulated_stdout = ""
+        accumulated_stderr = ""
+        start_time = time.time()
+        task_interrupted = False
+        
+        while process.poll() is None and not task_interrupted:
+            time.sleep(1)
+            task.user.refresh_from_db()
             
-            end_time = time.time()
-            total_seconds = end_time - start_time
-            total_credits_used = int(total_seconds)
+            accumulated_stdout, accumulated_stderr = self._read_process_output(
+                process, accumulated_stdout, accumulated_stderr
+            )
             
-            if total_credits_used > task.credits_cost:
-                remaining_credits = total_credits_used - task.credits_cost
-                task.user.reduce_credits(remaining_credits)
-                task.credits_cost = total_credits_used
+            elapsed_seconds = time.time() - start_time
+            if elapsed_seconds >= 1.0:
+                task_interrupted = self._handle_credits_deduction(task, elapsed_seconds, process)
+                if task_interrupted:
+                    accumulated_stdout, accumulated_stderr = self._get_remaining_output(
+                        process, accumulated_stdout, accumulated_stderr
+                    )
+                    task.interrupt(
+                        stdout=accumulated_stdout.strip(), 
+                        stderr=accumulated_stderr.strip()
+                    )
+        
+        return {
+            'stdout': accumulated_stdout,
+            'stderr': accumulated_stderr,
+            'interrupted': task_interrupted,
+            'start_time': start_time
+        }
+    
+    # Legge l'output del processo in modo non bloccante
+    def _read_process_output(self, process: subprocess.Popen, stdout: str, stderr: str) -> tuple:
+        try:
+            if select.select([process.stdout], [], [], 0)[0]:
+                line = process.stdout.readline()
+                if line:
+                    stdout += line
+            if select.select([process.stderr], [], [], 0)[0]:
+                line = process.stderr.readline()
+                if line:
+                    stderr += line
+        except:
+            pass
+        return stdout, stderr
+    
+    # Gestisce la deduzione dei crediti e l'interruzione se necessario
+    def _handle_credits_deduction(self, task: Task, elapsed_seconds: float, process: subprocess.Popen) -> bool:
+        credits_needed = int(elapsed_seconds)
+        
+        if task.user.credits >= credits_needed - task.credits_cost:
+            credits_to_deduct = credits_needed - task.credits_cost
+            if credits_to_deduct > 0:
+                task.user.reduce_credits(credits_to_deduct)
+                task.credits_cost = credits_needed
                 task.save()
-            
-            if process.returncode == 0:
-                task.complete(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
-            else:
-                task.fail(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
-
+            return False
+        else:
+            self._terminate_process(process)
+            return True
+    
+    # Termina il processo in modo sicuro
+    def _terminate_process(self, process: subprocess.Popen) -> None:
+        process.terminate()
+        try:
+            process.wait(timeout=0.5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+    
+    # Ottiene l'output rimanente dal processo terminato
+    def _get_remaining_output(self, process: subprocess.Popen, stdout: str, stderr: str) -> tuple:
+        try:
+            remaining_stdout, remaining_stderr = process.communicate(timeout=0.5)
+            stdout += remaining_stdout
+            stderr += remaining_stderr
+        except subprocess.TimeoutExpired:
+            pass
+        return stdout, stderr
+    
+    # Finalizza il task con l'output completo
+    def _finalize_task(self, task: Task, process: subprocess.Popen, output_data: Dict[str, Any]) -> None:
+        remaining_stdout, remaining_stderr = process.communicate()
+        final_stdout = output_data['stdout'] + remaining_stdout
+        final_stderr = output_data['stderr'] + remaining_stderr
+        
+        total_seconds = time.time() - output_data['start_time']
+        total_credits_used = int(total_seconds)
+        
+        if total_credits_used > task.credits_cost:
+            remaining_credits = total_credits_used - task.credits_cost
+            task.user.reduce_credits(remaining_credits)
+            task.credits_cost = total_credits_used
+            task.save()
+        
+        if process.returncode == 0:
+            task.complete(stdout=final_stdout.strip(), stderr=final_stderr.strip())
+        else:
+            task.fail(stdout=final_stdout.strip(), stderr=final_stderr.strip())
+    
+    # Pulisce il file temporaneo
+    def _cleanup_temp_file(self, tmp_path: Optional[str]) -> None:
+        if tmp_path:
             try:
                 os.unlink(tmp_path)
             except:
                 pass
 
-        except Exception as e:
-            task.fail(stdout='', stderr=f'Errore durante l\'esecuzione: {str(e)}')
-
 # =============================================================================
 # TASK QUERY & RETRIEVAL
 # =============================================================================
 
-# Lista task dell'utente
+### Lista task dell'utente ###
 class TaskListView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
-        user = request.user
-        tasks = Task.objects.filter(user=user).order_by('-created_at')[:10]
+    def get(self, request) -> Response:
+        tasks = Task.objects.filter(user=request.user).order_by('-created_at')[:10]
         serializer = TaskSerializer(tasks, many=True)
         return Response(serializer.data)
 
 
-# Dettagli di un task specifico
+### Dettagli di un task specifico ###
 class TaskDetailView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, task_id):
+    def get(self, request, task_id: int) -> Response:
         try:
             task = Task.objects.get(id=task_id, user=request.user)
             serializer = TaskSerializer(task)
