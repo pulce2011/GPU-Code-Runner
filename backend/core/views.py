@@ -9,6 +9,9 @@ from .models import Exercise, Course, User, Task
 from .serializers import ExerciseSerializer, UserSerializer, CourseSerializer, TaskSerializer
 
 
+# =============================================================================
+# AUTHENTICATION & USER MANAGEMENT
+# =============================================================================
 
 # Informazioni utente corrente
 class UserInfoView(views.APIView):
@@ -30,16 +33,18 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-
-        # opzionale: puoi anche generare qui JWT se vuoi login automatico
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
+# =============================================================================
+# COURSE & EXERCISE MANAGEMENT
+# =============================================================================
 
 # Lista corsi
 class CourseListView(generics.ListAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [permissions.AllowAny]  # accessibile anche senza login
+    permission_classes = [permissions.AllowAny]
 
 
 # Lista esercizi filtrati per corso utente loggato
@@ -58,6 +63,10 @@ class ExerciseListView(generics.ListAPIView):
         return Exercise.objects.none()
 
 
+# =============================================================================
+# CODE EXECUTION & TASK MANAGEMENT
+# =============================================================================
+
 # Esecuzione codice con sistema crediti
 class RunExerciseView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -73,23 +82,15 @@ class RunExerciseView(views.APIView):
         if not exercise_id:
             return Response({'error': 'exercise_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Controllo crediti prima dell'esecuzione
         if not user.has_credits():
-            return Response({
-                'error': 'Crediti insufficienti.'
-            }, status=status.HTTP_402_PAYMENT_REQUIRED)
+            return Response({'error': 'Crediti insufficienti.'}, status=status.HTTP_402_PAYMENT_REQUIRED)
 
         try:
-            # Ottieni l'esercizio
             exercise = Exercise.objects.get(id=exercise_id)
             
-            # Deduce 1 credito all'avvio (costo operazione + 1 secondo bonus)
             if not user.reduce_credits(1):
-                return Response({
-                    'error': 'Crediti insufficienti.'
-                }, status=status.HTTP_402_PAYMENT_REQUIRED)
+                return Response({'error': 'Crediti insufficienti.'}, status=status.HTTP_402_PAYMENT_REQUIRED)
             
-            # Crea un nuovo task
             task = Task.objects.create(
                 user=user,
                 exercise=exercise,
@@ -97,12 +98,8 @@ class RunExerciseView(views.APIView):
                 credits_cost=1,
             )
             
-            #Segna il task come in attesa
             task.pending()
             
-            ### GESTIONE ATTESA ###
-
-            # Avvia il task in un thread separato
             thread = threading.Thread(target=self._execute_task, args=(task,))
             thread.daemon = True
             thread.start()
@@ -119,44 +116,35 @@ class RunExerciseView(views.APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def _execute_task(self, task):
-        """Esegue il task in background con controllo crediti"""
         try:
-            #Avvia il task
             task.start()
 
-            # Salva codice su file temporaneo
             with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as f:
                 f.write(task.code)
                 tmp_path = f.name
 
-            # Avvia processo con Popen per controllo asincrono
             process = subprocess.Popen(
                 ['bash', 'simulate_gpu.sh', tmp_path],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                bufsize=1  # Line buffered
+                bufsize=1
             )
             
-            # Variabili per accumulare l'output
             accumulated_stdout = ""
             accumulated_stderr = ""
             
-            #Salva l'ID del processo (PID)
             task.process_id = process.pid
             task.save()
 
-            # Loop di controllo crediti durante l'esecuzione
             start_time = time.time()
             task_interrupted = False
             
             while process.poll() is None and not task_interrupted:
-                time.sleep(1)  # Controllo ogni 1 secondo
+                time.sleep(1)
                 task.user.refresh_from_db()
                 
-                # Legge l'output parziale se disponibile
                 try:
-                    # Non bloccante, legge solo se c'è output
                     import select
                     if select.select([process.stdout], [], [], 0)[0]:
                         line = process.stdout.readline()
@@ -167,74 +155,59 @@ class RunExerciseView(views.APIView):
                         if line:
                             accumulated_stderr += line
                 except:
-                    pass  # Ignora errori di lettura
+                    pass
                 
-                # Calcola il tempo trascorso dall'avvio
                 current_time = time.time()
                 elapsed_seconds = current_time - start_time
                 
-                # Dopo 1 secondo, deduci 1 credito ogni secondo
                 if elapsed_seconds >= 1.0:
-                    credits_needed = int(elapsed_seconds)  # 1 credito per ogni secondo
+                    credits_needed = int(elapsed_seconds)
                     if task.user.credits >= credits_needed - task.credits_cost:
-                        # Deduci i crediti mancanti
                         credits_to_deduct = credits_needed - task.credits_cost
                         if credits_to_deduct > 0:
                             task.user.reduce_credits(credits_to_deduct)
                             task.credits_cost = credits_needed
                             task.save()
                     else:
-                        # Se non ha abbastanza crediti, interrompe il processo
-                        # Forza la terminazione del processo
                         process.terminate()
                         try:
-                            # Aspetta massimo 0.5 secondi per la terminazione
                             process.wait(timeout=0.5)
                         except subprocess.TimeoutExpired:
-                            # Se non termina, forza la kill
                             process.kill()
                         
-                        # Legge l'output rimanente se disponibile
                         try:
                             remaining_stdout, remaining_stderr = process.communicate(timeout=0.5)
                             accumulated_stdout += remaining_stdout
                             accumulated_stderr += remaining_stderr
                         except subprocess.TimeoutExpired:
-                            pass  # Usa l'output già accumulato
+                            pass
                         
                         task.interrupt(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
                         task_interrupted = True
                         break
 
-            # Se il task è stato interrotto, non procedere con il completamento
             if task_interrupted:
                 return
             
-            # Se arriva qui, il processo è terminato normalmente
-            # Legge l'output rimanente
             remaining_stdout, remaining_stderr = process.communicate()
             accumulated_stdout += remaining_stdout
             accumulated_stderr += remaining_stderr
             
-            # Calcola i crediti finali
             end_time = time.time()
             total_seconds = end_time - start_time
-            total_credits_used = int(total_seconds)  # 1 credito per ogni secondo
+            total_credits_used = int(total_seconds)
             
-            # Deduci i crediti finali se necessario
             if total_credits_used > task.credits_cost:
                 remaining_credits = total_credits_used - task.credits_cost
                 task.user.reduce_credits(remaining_credits)
                 task.credits_cost = total_credits_used
                 task.save()
             
-            # Controlla se è stato interrotto o completato
             if process.returncode == 0:
                 task.complete(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
             else:
                 task.fail(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
 
-            # Pulisci il file temporaneo
             try:
                 os.unlink(tmp_path)
             except:
@@ -242,9 +215,12 @@ class RunExerciseView(views.APIView):
 
         except Exception as e:
             task.fail(stdout='', stderr=f'Errore durante l\'esecuzione: {str(e)}')
-            
 
-#Lista task dell'utente
+# =============================================================================
+# TASK QUERY & RETRIEVAL
+# =============================================================================
+
+# Lista task dell'utente
 class TaskListView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 

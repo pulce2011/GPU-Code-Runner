@@ -38,6 +38,7 @@ class UserManager(BaseUserManager):
 # Modello per rappresentare un corso universitario
 class Course(models.Model):
     name = models.CharField(max_length=200)
+    
     def __str__(self):
         return self.name
 
@@ -58,11 +59,13 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.matr})"
     
+    # Verifica se l'utente ha abbastanza crediti
     def has_credits(self, amount=1):
         if self.is_superuser or self.is_staff:
             return True
         return self.credits >= amount
     
+    # Riduce i crediti dell'utente
     def reduce_credits(self, amount=1):
         if self.is_superuser or self.is_staff:
             return True
@@ -84,17 +87,12 @@ class Exercise(models.Model):
     def __str__(self):
         return self.name
 
+    # Costruisce la firma della funzione con commenti e parametri
     def build_signature(self):
-        # Commento multi-linea
         comment_block = f"/*\n{self.comment}\n*/" if self.comment else ""
-
-        # Parametri
         param_list = ', '.join([f"{p['type']} {p['name']}" for p in self.params])
-
-        # Firma funzione
         signature_line = f"{self.return_type} {self.name}({param_list})"
         
-        # Combina tutto
         if comment_block:
             return f"{comment_block}\n\n{signature_line} {'{'}\n\n{'}'}\n"
         else:
@@ -103,7 +101,6 @@ class Exercise(models.Model):
 
 # Modello per rappresentare un task (Richiesta di esecuzione di un esercizio)
 class Task(models.Model):
-    
     STATUS_CHOICES = [
         ('pending', 'In attesa'),
         ('running', 'In esecuzione'),
@@ -129,20 +126,20 @@ class Task(models.Model):
     def __str__(self):
         return f"Task {self.id} - {self.user.matr} - {self.status}"
     
-    #Avvia il task
+    # Avvia il task
     def start(self):
         self.status = 'running'
         self.started_at = timezone.now()
         self.message = "Task in esecuzione..."
         self.save()
 
-    #Segna il task come in attesa
+    # Segna il task come in attesa
     def pending(self):
         self.status = 'pending'
         self.message = "Task in attesa di esecuzione..."
         self.save()
     
-    #Completa il task con successo
+    # Completa il task con successo
     def complete(self, stdout='', stderr=''):
         self.status = 'completed'
         self.finished_at = timezone.now()
@@ -153,7 +150,7 @@ class Task(models.Model):
         self.message = "Task completato con successo."
         self.save()
     
-    #Segna il task come fallito
+    # Segna il task come fallito
     def fail(self, stdout='', stderr=''):
         self.status = 'failed'
         self.finished_at = timezone.now()
@@ -164,7 +161,7 @@ class Task(models.Model):
         self.message = "Task fallito."
         self.save()
     
-    #Interrompe il task per crediti esauriti
+    # Interrompe il task per crediti esauriti
     def interrupt(self, stdout='', stderr=''):
         self.status = 'interrupted'
         self.finished_at = timezone.now()
