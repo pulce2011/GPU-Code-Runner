@@ -256,7 +256,7 @@ function DashboardPage() {
         )}
 
         {/* Risultati esecuzione */}
-        {executionOutput && (executionOutput.stdout || executionOutput.stderr || taskDetails) && (
+        {taskDetails && (
           <div className="card">
             <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
               <svg className="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,6 +274,7 @@ function DashboardPage() {
                   taskDetails.status === 'failed' ? 'bg-red-50 border-red-200' :
                   taskDetails.status === 'interrupted' ? 'bg-yellow-50 border-yellow-200' :
                   taskDetails.status === 'running' ? 'bg-blue-50 border-blue-200' :
+                  taskDetails.status === 'pending' ? 'bg-blue-50 border-blue-200' :
                   'bg-gray-50 border-gray-200'
                 }`}>
                   <div className="flex items-center">
@@ -282,6 +283,7 @@ function DashboardPage() {
                       taskDetails.status === 'failed' ? 'text-red-500' :
                       taskDetails.status === 'interrupted' ? 'text-yellow-500' :
                       taskDetails.status === 'running' ? 'text-blue-500' :
+                      taskDetails.status === 'pending' ? 'text-blue-500' :
                       'text-gray-500'
                     }`}>
                       {getStatusIcon(taskDetails.status)}
@@ -291,6 +293,7 @@ function DashboardPage() {
                       taskDetails.status === 'failed' ? 'text-red-800' :
                       taskDetails.status === 'interrupted' ? 'text-yellow-800' :
                       taskDetails.status === 'running' ? 'text-blue-800' :
+                      taskDetails.status === 'pending' ? 'text-blue-800' :
                       'text-gray-800'
                     }`}>
                       {taskDetails.message}
@@ -300,7 +303,7 @@ function DashboardPage() {
               )}
 
               {/* Dettagli Task */}
-              {taskDetails && (
+              {taskDetails && ['completed', 'failed', 'interrupted'].includes(taskDetails.status) && (
                 <div>
                   <div className="flex items-center mb-2">
                     <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
@@ -350,7 +353,7 @@ function DashboardPage() {
               )}
 
               {/* Output standard */}
-              {executionOutput.stdout && (
+              {executionOutput?.stdout && (
                 <div>
                   <div className="flex items-center mb-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
@@ -363,7 +366,7 @@ function DashboardPage() {
               )}
 
               {/* Output errori */}
-              {executionOutput.stderr && (
+              {executionOutput?.stderr && (
                 <div>
                   <div className="flex items-center mb-2">
                     <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>

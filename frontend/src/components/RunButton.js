@@ -20,17 +20,18 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
       });
       
       if (response.data.task_id) {
-        // Mostra messaggio di avvio
-        onOutputChange?.({
-          stdout: `Lavoro avviato!\nTask ID: ${response.data.task_id}\nStatus: ${response.data.status}`,
-          stderr: ''
+        // Non mostrare output, solo dettagli task
+        onOutputChange?.(null);
+        
+        // Mostra dettagli task in pending
+        onTaskDetails?.({
+          id: response.data.task_id,
+          status: 'pending',
+          message: 'Task in attesa di esecuzione...'
         });
         
-        // Nascondi dettagli task precedente
-        onTaskDetails?.(null);
-        
         // Avvia polling
-        setTimeout(() => pollTaskStatus(response.data.task_id), 1000);
+        setTimeout(() => pollTaskStatus(response.data.task_id), 100);
       } else {
         // Risposta legacy
         onOutputChange?.({
@@ -78,6 +79,12 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
             }
           }
           return;
+        }
+        
+        // Task in esecuzione - mostra solo dettagli, nessun output
+        if (task.status === 'running') {
+          onOutputChange?.(null);
+          onTaskDetails?.(task);
         }
         
         // Continua polling
