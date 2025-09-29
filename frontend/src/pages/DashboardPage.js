@@ -66,6 +66,12 @@ function DashboardPage() {
     }
   };
 
+  // Reset dei risultati all'inizio di una nuova esecuzione
+  const handleResetResults = () => {
+    setExecutionOutput(null);
+    setTaskDetails(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header con logout */}
@@ -176,6 +182,7 @@ function DashboardPage() {
                 onOutputChange={handleExecutionOutput}
                 onTaskDetails={handleTaskDetails}
                 onCreditsUpdate={handleCreditsUpdate}
+                onResetResults={handleResetResults}
                 exerciseId={selectedExercise?.id}
               />
             </div>

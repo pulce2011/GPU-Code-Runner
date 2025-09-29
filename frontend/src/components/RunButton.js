@@ -2,12 +2,17 @@ import { useState } from 'react';
 import api from '../services/api';
 
 // Componente pulsante per esecuzione codice
-function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, exerciseId }) {
+function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onResetResults, exerciseId }) {
   const [loading, setLoading] = useState(false);
 
   // Esegue codice sul backend
   const handleRun = async () => {
     if (!code || !exerciseId) return;
+
+    // Reset dei risultati all'inizio dell'esecuzione
+    if (onResetResults) {
+      onResetResults();
+    }
 
     setLoading(true);
     try {
