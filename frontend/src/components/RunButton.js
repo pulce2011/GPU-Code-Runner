@@ -40,11 +40,19 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
         });
       }
     } catch (error) {
-      const errorMessage = error.response?.status === 402 
-        ? error.response.data.error 
-        : error.message;
-        
-      onOutputChange?.({ stdout: '', stderr: errorMessage });
+      if (error.response?.status === 402) {
+        // Crediti insufficienti - mostra messaggio dedicato
+        onOutputChange?.(null);
+        onTaskDetails?.({
+          id: null,
+          status: 'insufficient_credits',
+          message: 'Crediti esauriti'
+        });
+      } else {
+        // Altri errori
+        const errorMessage = error.message;
+        onOutputChange?.({ stdout: '', stderr: errorMessage });
+      }
     } finally {
       setLoading(false);
     }
