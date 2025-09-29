@@ -18,11 +18,24 @@ function CodeEditor({ exercise, onCodeChange }) {
     onCodeChange(value);
   };
 
+  // Configurazione editor Monaco
+  const editorOptions = {
+    fontSize: 14,
+    minimap: { enabled: false },
+    automaticLayout: true,
+    lineNumbers: 'on',
+    wordWrap: 'on',
+    scrollBeyondLastLine: false,
+    padding: { top: 16, bottom: 16 },
+    fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
+    fontLigatures: true,
+  };
+
   return (
     <div className="space-y-4">
-      
+
       {/* Consegna esercizio */}
-      {exercise && exercise.comment && (
+      {exercise?.comment && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -38,7 +51,7 @@ function CodeEditor({ exercise, onCodeChange }) {
         </div>
       )}
 
-      {/* Editor Monaco */}
+      {/* Informazioni editor */}
       <div className="border border-gray-300 rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-4 py-2 border-b border-gray-300">
           <div className="flex items-center justify-between">
@@ -55,7 +68,8 @@ function CodeEditor({ exercise, onCodeChange }) {
             </div>
           </div>
         </div>
-        
+
+        {/* Editor Monaco */}
         <div className="bg-white">
           <Editor
             height="400px"
@@ -63,22 +77,12 @@ function CodeEditor({ exercise, onCodeChange }) {
             value={code}
             onChange={handleEditorChange}
             theme="vs-light"
-            options={{
-              fontSize: 14,
-              minimap: { enabled: false },
-              automaticLayout: true,
-              lineNumbers: 'on',
-              wordWrap: 'on',
-              scrollBeyondLastLine: false,
-              padding: { top: 16, bottom: 16 },
-              fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
-              fontLigatures: true,
-            }}
+            options={editorOptions}
           />
         </div>
       </div>
 
-      {/* Info codice */}
+      {/* Informazioni codice */}
       <div className="flex items-center justify-between text-sm text-gray-600">
         <div className="flex items-center space-x-4">
           <span className="flex items-center">

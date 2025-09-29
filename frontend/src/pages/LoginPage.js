@@ -12,23 +12,23 @@ function LoginPage() {
   const { login } = useAuth();
 
   // Gestisce submit form login
-  const handleLogin = async () => {
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    
     if (!email || !password) {
       alert('Compila tutti i campi');
       return;
     }
 
+    // Avvia loading
     setLoading(true);
     try {
-      // Autenticazione JWT
-      const res = await api.post('/token/', { email, password });
-      login(res.data.access, res.data.refresh);
-      
-      // Redirect alla dashboard
+      const response = await api.post('/token/', { email, password });
+      login(response.data.access, response.data.refresh);
       navigate('/dashboard');
-    } catch (err) {
+    } catch (error) {
       alert('Login fallito');
-      console.error(err);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -45,9 +45,11 @@ function LoginPage() {
         </h2>
       </div>
 
+      {/* Form login */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="card">
-          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+          <form className="space-y-6" onSubmit={handleLogin}>
+            {/* Email */}
             <div className="form-group">
               <label htmlFor="email" className="form-label">
                 Indirizzo email
@@ -65,6 +67,7 @@ function LoginPage() {
               />
             </div>
 
+            {/* Password */}
             <div className="form-group">
               <label htmlFor="password" className="form-label">
                 Password
@@ -82,6 +85,7 @@ function LoginPage() {
               />
             </div>
 
+            {/* Bottone login */}
             <div>
               <button
                 type="submit"
@@ -89,13 +93,13 @@ function LoginPage() {
                 className="btn-primary w-full flex justify-center py-3 px-4 text-sm font-medium"
               >
                 {loading ? (
-                  <div className="flex items-center">
+                  <>
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     Accesso in corso...
-                  </div>
+                  </>
                 ) : (
                   'Accedi'
                 )}
@@ -103,6 +107,7 @@ function LoginPage() {
             </div>
           </form>
 
+          {/* Divisore */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -113,6 +118,7 @@ function LoginPage() {
               </div>
             </div>
 
+            {/* Link registrazione */}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Non hai un account?{' '}

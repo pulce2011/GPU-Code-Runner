@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api, { setTokens } from '../services/api';
+import api from '../services/api';
 
 // Componente form di registrazione
 function Register({ onRegister, onSwitchToLogin }) {
@@ -10,12 +10,20 @@ function Register({ onRegister, onSwitchToLogin }) {
   const [password, setPassword] = useState('');
   const [courseId, setCourseId] = useState('');
   const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Carica lista corsi
   useEffect(() => {
-    api.get('/courses/')
-      .then(res => setCourses(res.data))
-      .catch(err => console.error(err));
+    const fetchCourses = async () => {
+      try {
+        const response = await api.get('/courses/');
+        setCourses(response.data);
+      } catch (error) {
+        console.error('Errore nel recupero corsi:', error);
+      }
+    };
+
+    fetchCourses();
   }, []);
 
   // Gestisce registrazione
@@ -25,8 +33,8 @@ function Register({ onRegister, onSwitchToLogin }) {
       return;
     }
 
+    setLoading(true);
     try {
-      // Crea nuovo utente
       await api.post('/register/', {
         email,
         matr,
@@ -36,31 +44,137 @@ function Register({ onRegister, onSwitchToLogin }) {
         course: courseId ? parseInt(courseId) : null
       });
 
-      // Successo - vai al login
       alert('Registrazione completata! Ora puoi effettuare il login.');
       onSwitchToLogin();
-
-    } catch (err) {
+    } catch (error) {
       alert('Registrazione fallita');
-      console.error(err);
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-      <h2>Registrazione</h2>
-      <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-      <input type="text" placeholder="Matricola" value={matr} onChange={e => setMatr(e.target.value)} />
-      <input type="text" placeholder="Nome" value={firstName} onChange={e => setFirstName(e.target.value)} />
-      <input type="text" placeholder="Cognome" value={lastName} onChange={e => setLastName(e.target.value)} />
-      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+    <div className="max-w-md mx-auto space-y-4">
+      <h2 className="text-2xl font-bold text-center mb-6">Registrazione</h2>
+      
+      {/* Nome */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="form-group">
+          <label htmlFor="firstName" className="form-label">
+            Nome
+          </label>
+          <input
+            id="firstName"
+            type="text"
+            placeholder="Inserisci il tuo nome"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="input-field"
+            required
+            disabled={loading}
+          />
+        </div>
 
-      <select value={courseId} onChange={e => setCourseId(e.target.value)}>
-        <option value="">Seleziona corso</option>
-        {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
+        {/* Cognome */}
+        <div className="form-group">
+          <label htmlFor="lastName" className="form-label">
+            Cognome
+          </label>
+          <input
+            id="lastName"
+            type="text"
+            placeholder="Inserisci il tuo cognome"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className="input-field"
+            required
+            disabled={loading}
+          />
+        </div>
+      </div>
 
-      <button onClick={handleRegister}>Registrati</button>
+      {/* Email */}
+      <div className="form-group">
+        <label htmlFor="email" className="form-label">
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          placeholder="Inserisci la tua email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="input-field"
+          required
+          disabled={loading}
+        />
+      </div>
+
+      {/* Matricola */}
+      <div className="form-group">
+        <label htmlFor="matr" className="form-label">
+          Matricola
+        </label>
+        <input
+          id="matr"
+          type="text"
+          placeholder="Inserisci la tua matricola"
+          value={matr}
+          onChange={(e) => setMatr(e.target.value)}
+          className="input-field"
+          required
+          disabled={loading}
+        />
+      </div>
+
+      {/* Corso di laurea */}
+      <div className="form-group">
+        <label htmlFor="course" className="form-label">
+          Corso di laurea
+        </label>
+        <select
+          id="course"
+          value={courseId}
+          onChange={(e) => setCourseId(e.target.value)}
+          className="input-field"
+          required
+          disabled={loading}
+        >
+          <option value="">Seleziona un corso</option>
+          {courses.map(course => (
+            <option key={course.id} value={course.id}>
+              {course.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Password */}
+      <div className="form-group">
+        <label htmlFor="password" className="form-label">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          placeholder="Inserisci una password sicura"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="input-field"
+          required
+          disabled={loading}
+        />
+      </div>
+
+      {/* Bottone registrazione */}
+      <button
+        onClick={handleRegister}
+        className="btn-primary w-full"
+        disabled={loading}
+      >
+        {loading ? 'Registrazione in corso...' : 'Registrati'}
+      </button>
     </div>
   );
 }

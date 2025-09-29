@@ -9,130 +9,96 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
   const handleRun = async () => {
     if (!code || !exerciseId) return;
 
-    // Reset dei risultati all'inizio dell'esecuzione
-    if (onResetResults) {
-      onResetResults();
-    }
+    // Reset risultati precedenti
+    onResetResults?.();
 
     setLoading(true);
     try {
-      const res = await api.post('/run/', { 
-        code: code,
+      const response = await api.post('/run/', { 
+        code, 
         exercise_id: exerciseId 
       });
       
-      // Gestisce la nuova risposta con task_id
-      if (res.data.task_id) {
-        // Lavoro avviato con successo
-        const newOutput = { 
-          stdout: `Lavoro avviato con successo!\nTask ID: ${res.data.task_id}\nStatus: ${res.data.status}`,
-          stderr: '',
-        };
+      if (response.data.task_id) {
+        // Mostra messaggio di avvio
+        onOutputChange?.({
+          stdout: `Lavoro avviato!\nTask ID: ${response.data.task_id}\nStatus: ${response.data.status}`,
+          stderr: ''
+        });
         
-        // Notifica risultati al padre
-        if (onOutputChange) {
-          onOutputChange(newOutput);
-        }
+        // Nascondi dettagli task precedente
+        onTaskDetails?.(null);
         
-        // Nascondi i dettagli del task precedente quando ne viene avviato uno nuovo
-        if (onTaskDetails) {
-          onTaskDetails(null);
-        }
-        
-        // Polling per ottenere i risultati del task (con delay per permettere al backend di salvare)
-        setTimeout(() => {
-          pollTaskStatus(res.data.task_id);
-        }, 1000);
+        // Avvia polling
+        setTimeout(() => pollTaskStatus(response.data.task_id), 1000);
       } else {
-        // Risposta legacy (per compatibilità)
-        const newOutput = {
-          stdout: res.data.stdout,
-          stderr: res.data.stderr,
-        };
-        if (onOutputChange) {
-          onOutputChange(newOutput);
-        }
+        // Risposta legacy
+        onOutputChange?.({
+          stdout: response.data.stdout,
+          stderr: response.data.stderr
+        });
       }
-    } catch (err) {
-      console.error(err);
-      let errorMessage = err.message;
-      
-      // Gestisce errori specifici per crediti insufficienti
-      if (err.response?.status === 402) {
-        errorMessage = err.response.data.error
-      }
-      
-      const errorOutput = { stdout: '', stderr: errorMessage };
-      if (onOutputChange) {
-        onOutputChange(errorOutput);
-      }
+    } catch (error) {
+      const errorMessage = error.response?.status === 402 
+        ? error.response.data.error 
+        : error.message;
+        
+      onOutputChange?.({ stdout: '', stderr: errorMessage });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  // Polling per ottenere i risultati del task
+  // Polling per risultati task
   const pollTaskStatus = async (taskId) => {
-    const maxAttempts = 30; // 30 tentativi (30 secondi)
     let attempts = 0;
+    const maxAttempts = 30;
     
     const poll = async () => {
       try {
-        const res = await api.get(`/tasks/${taskId}/`);
-        const task = res.data;
+        const response = await api.get(`/tasks/${taskId}/`);
+        const task = response.data;
         
         // Task completato
-        if (task.status === 'completed' || task.status === 'failed' || task.status === 'interrupted') {
-          const newOutput = {
+        if (['completed', 'failed', 'interrupted'].includes(task.status)) {
+          onOutputChange?.({
             stdout: task.stdout || '',
-            stderr: task.stderr || '',
-          };
-          if (onOutputChange) {
-            onOutputChange(newOutput);
-          }
-          if (onTaskDetails) {
-            onTaskDetails(task);
-          }
+            stderr: task.stderr || ''
+          });
           
-          // Aggiorna i crediti dell'utente dopo il completamento
+          onTaskDetails?.(task);
+          
+          // Aggiorna crediti
           if (onCreditsUpdate) {
-            // Recupera i crediti aggiornati dal database
             try {
               const userResponse = await api.get('/user/');
               onCreditsUpdate(userResponse.data.credits);
             } catch (error) {
-              console.error('Errore nel recupero dei crediti aggiornati:', error);
+              console.error('Errore aggiornamento crediti:', error);
             }
           }
-          
           return;
         }
         
+        // Continua polling
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 1000); // Riprova dopo 1 secondo
+          setTimeout(poll, 1000);
         } else {
-          // Timeout
-          const timeoutOutput = {
+          onOutputChange?.({
             stdout: '',
-            stderr: 'Timeout: impossibile ottenere i risultati del lavoro',
-          };
-          if (onOutputChange) {
-            onOutputChange(timeoutOutput);
-          }
+            stderr: 'Timeout: impossibile ottenere i risultati'
+          });
         }
-      } catch (err) {
-        console.error('Errore nel polling del task:', err);
-        const errorOutput = {
+      } catch (error) {
+        console.error('Errore polling:', error);
+        onOutputChange?.({
           stdout: '',
-          stderr: 'Errore nel recupero dei risultati del lavoro',
-        };
-        if (onOutputChange) {
-          onOutputChange(errorOutput);
-        }
+          stderr: 'Errore nel recupero dei risultati'
+        });
       }
     };
     
-    // Inizia il polling dopo 1 secondo
     setTimeout(poll, 1000);
   };
 

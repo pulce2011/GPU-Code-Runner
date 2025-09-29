@@ -6,29 +6,34 @@ export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Verifica validità token salvati
+  // Verifica validità token
+  const isValidToken = (token) => {
+    return token && token !== 'null' && token.trim() !== '';
+  };
+
+  // Verifica autenticazione
   const checkAuth = () => {
-    const access = localStorage.getItem('accessToken');
-    const refresh = localStorage.getItem('refreshToken');
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
     
-    // Controlla esistenza e validità token
-    const isValidAccess = access && access !== 'null' && access.trim() !== '';
-    const isValidRefresh = refresh && refresh !== 'null' && refresh.trim() !== '';
-    
-    if (isValidAccess && isValidRefresh) {
-      setTokens(access, refresh);
+    if (isValidToken(accessToken) && isValidToken(refreshToken)) {
+      setTokens(accessToken, refreshToken);
       setIsAuthenticated(true);
     } else {
-      // Pulisce token non validi
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      setTokens(null, null);
-      setIsAuthenticated(false);
+      clearTokens();
     }
     setLoading(false);
   };
 
-  // Salva token dopo login
+  // Pulisce token
+  const clearTokens = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setTokens(null, null);
+    setIsAuthenticated(false);
+  };
+
+  // Login
   const login = (accessToken, refreshToken) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
@@ -36,20 +41,14 @@ export function useAuth() {
     setIsAuthenticated(true);
   };
 
-  // Rimuove token e logout
+  // Logout
   const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    setTokens(null, null);
-    setIsAuthenticated(false);
+    clearTokens();
   };
 
   // Controlla auth all'avvio
   useEffect(() => {
-    // Delay per assicurare montaggio componente
-    setTimeout(() => {
-      checkAuth();
-    }, 100);
+    setTimeout(checkAuth, 100);
   }, []);
 
   return { isAuthenticated, loading, login, logout };

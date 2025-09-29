@@ -16,13 +16,22 @@ function RegisterPage() {
 
   // Carica lista corsi dal backend
   useEffect(() => {
-    api.get('/courses/')
-      .then(res => setCourses(res.data))
-      .catch(err => console.error(err));
+    const fetchCourses = async () => {
+      try {
+        const response = await api.get('/courses/');
+        setCourses(response.data);
+      } catch (error) {
+        console.error('Errore nel recupero corsi:', error);
+      }
+    };
+
+    fetchCourses();
   }, []);
 
   // Gestisce submit form registrazione
-  const handleRegister = async () => {
+  const handleRegister = async (event) => {
+    event.preventDefault();
+    
     if (!email || !matr || !firstName || !lastName || !password || !courseId) {
       alert('Compila tutti i campi');
       return;
@@ -30,7 +39,6 @@ function RegisterPage() {
 
     setLoading(true);
     try {
-      // Crea nuovo utente
       await api.post('/register/', {
         email,
         matr,
@@ -40,12 +48,11 @@ function RegisterPage() {
         course: courseId ? parseInt(courseId) : null
       });
 
-      // Successo - redirect al login
       alert('Registrazione completata! Ora puoi effettuare il login.');
       navigate('/login');
-    } catch (err) {
+    } catch (error) {
       alert('Registrazione fallita');
-      console.error(err);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -62,10 +69,12 @@ function RegisterPage() {
         </h2>
       </div>
 
+      {/* Form registrazione */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="card">
-          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleRegister(); }}>
+          <form className="space-y-6" onSubmit={handleRegister}>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {/* Nome */}
               <div className="form-group">
                 <label htmlFor="firstName" className="form-label">
                   Nome
@@ -83,6 +92,7 @@ function RegisterPage() {
                 />
               </div>
 
+              {/* Cognome */}
               <div className="form-group">
                 <label htmlFor="lastName" className="form-label">
                   Cognome
@@ -101,6 +111,7 @@ function RegisterPage() {
               </div>
             </div>
 
+            {/* Email */}
             <div className="form-group">
               <label htmlFor="email" className="form-label">
                 Indirizzo email
@@ -118,6 +129,7 @@ function RegisterPage() {
               />
             </div>
 
+            {/* Matricola */}
             <div className="form-group">
               <label htmlFor="matr" className="form-label">
                 Numero di matricola
@@ -134,6 +146,7 @@ function RegisterPage() {
               />
             </div>
 
+            {/* Corso di laurea */}
             <div className="form-group">
               <label htmlFor="course" className="form-label">
                 Corso di laurea
@@ -155,6 +168,7 @@ function RegisterPage() {
               </select>
             </div>
 
+            {/* Password */}
             <div className="form-group">
               <label htmlFor="password" className="form-label">
                 Password
@@ -172,6 +186,7 @@ function RegisterPage() {
               />
             </div>
 
+            {/* Bottone registrazione */}
             <div>
               <button
                 type="submit"
@@ -179,13 +194,13 @@ function RegisterPage() {
                 className="btn-primary w-full flex justify-center py-3 px-4 text-sm font-medium"
               >
                 {loading ? (
-                  <div className="flex items-center">
+                  <>
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     Registrazione in corso...
-                  </div>
+                  </>
                 ) : (
                   'Registrati'
                 )}
@@ -193,6 +208,7 @@ function RegisterPage() {
             </div>
           </form>
 
+          {/* Divisore */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -203,6 +219,7 @@ function RegisterPage() {
               </div>
             </div>
 
+            {/* Link login */}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Hai già un account?{' '}
