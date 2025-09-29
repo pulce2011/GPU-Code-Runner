@@ -83,6 +83,12 @@ class RunExerciseView(views.APIView):
             # Ottieni l'esercizio
             exercise = Exercise.objects.get(id=exercise_id)
             
+            # Deduce 1 credito all'avvio (costo operazione + 1 secondo bonus)
+            if not user.reduce_credits(1):
+                return Response({
+                    'error': 'Crediti insufficienti.'
+                }, status=status.HTTP_402_PAYMENT_REQUIRED)
+            
             # Crea un nuovo task
             task = Task.objects.create(
                 user=user,
@@ -93,6 +99,8 @@ class RunExerciseView(views.APIView):
             
             #Segna il task come in attesa
             task.pending()
+            
+            ### GESTIONE ATTESA ###
 
             # Avvia il task in un thread separato
             thread = threading.Thread(target=self._execute_task, args=(task,))
@@ -126,8 +134,13 @@ class RunExerciseView(views.APIView):
                 ['bash', 'simulate_gpu.sh', tmp_path],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
+                bufsize=1  # Line buffered
             )
+            
+            # Variabili per accumulare l'output
+            accumulated_stdout = ""
+            accumulated_stderr = ""
             
             #Salva l'ID del processo (PID)
             task.process_id = process.pid
@@ -135,37 +148,91 @@ class RunExerciseView(views.APIView):
 
             # Loop di controllo crediti durante l'esecuzione
             start_time = time.time()
-            while process.poll() is None:
-                time.sleep(1)
+            task_interrupted = False
+            
+            while process.poll() is None and not task_interrupted:
+                time.sleep(1)  # Controllo ogni 1 secondo
                 task.user.refresh_from_db()
                 
-                # Controlla se ha abbastanza crediti (senza dedurre)
-                if task.user.credits <= 0:
-                    # Se non ha abbastanza crediti, interrompe il processo
-                    process.terminate()
-                    task.interrupt()
-                    return
+                # Legge l'output parziale se disponibile
+                try:
+                    # Non bloccante, legge solo se c'è output
+                    import select
+                    if select.select([process.stdout], [], [], 0)[0]:
+                        line = process.stdout.readline()
+                        if line:
+                            accumulated_stdout += line
+                    if select.select([process.stderr], [], [], 0)[0]:
+                        line = process.stderr.readline()
+                        if line:
+                            accumulated_stderr += line
+                except:
+                    pass  # Ignora errori di lettura
+                
+                # Calcola il tempo trascorso dall'avvio
+                current_time = time.time()
+                elapsed_seconds = current_time - start_time
+                
+                # Dopo 1 secondo, deduci 1 credito ogni secondo
+                if elapsed_seconds >= 1.0:
+                    credits_needed = int(elapsed_seconds)  # 1 credito per ogni secondo
+                    if task.user.credits >= credits_needed - task.credits_cost:
+                        # Deduci i crediti mancanti
+                        credits_to_deduct = credits_needed - task.credits_cost
+                        if credits_to_deduct > 0:
+                            task.user.reduce_credits(credits_to_deduct)
+                            task.credits_cost = credits_needed
+                            task.save()
+                    else:
+                        # Se non ha abbastanza crediti, interrompe il processo
+                        # Forza la terminazione del processo
+                        process.terminate()
+                        try:
+                            # Aspetta massimo 0.5 secondi per la terminazione
+                            process.wait(timeout=0.5)
+                        except subprocess.TimeoutExpired:
+                            # Se non termina, forza la kill
+                            process.kill()
+                        
+                        # Legge l'output rimanente se disponibile
+                        try:
+                            remaining_stdout, remaining_stderr = process.communicate(timeout=0.5)
+                            accumulated_stdout += remaining_stdout
+                            accumulated_stderr += remaining_stderr
+                        except subprocess.TimeoutExpired:
+                            pass  # Usa l'output già accumulato
+                        
+                        task.interrupt(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
+                        task_interrupted = True
+                        break
 
-            # Se arriva qui, il processo è terminato normalmente
-            stdout, stderr = process.communicate()
+            # Se il task è stato interrotto, non procedere con il completamento
+            if task_interrupted:
+                return
             
-            # Calcola i crediti utilizzati arrotondati per difetto
+            # Se arriva qui, il processo è terminato normalmente
+            # Legge l'output rimanente
+            remaining_stdout, remaining_stderr = process.communicate()
+            accumulated_stdout += remaining_stdout
+            accumulated_stderr += remaining_stderr
+            
+            # Calcola i crediti finali
             end_time = time.time()
             total_seconds = end_time - start_time
-            credits_used = max(1, int(total_seconds))  # Minimo 1 credito, arrotonda per difetto
+            total_credits_used = int(total_seconds)  # 1 credito per ogni secondo
             
-            # Deduce i crediti calcolati PRIMA di completare il task
-            task.user.reduce_credits(credits_used)
-            
-            # Aggiorna il task con i crediti utilizzati
-            task.credits_cost = credits_used
-            task.save()
+            # Deduci i crediti finali se necessario
+            if total_credits_used > task.credits_cost:
+                remaining_credits = total_credits_used - task.credits_cost
+                task.user.reduce_credits(remaining_credits)
+                task.credits_cost = total_credits_used
+                task.save()
             
             # Controlla se è stato interrotto o completato
             if process.returncode == 0:
-                task.complete(stdout=stdout.strip(), stderr=stderr.strip())
+                task.complete(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
             else:
-                task.fail(stdout=stdout.strip(), stderr=stderr.strip())
+                task.fail(stdout=accumulated_stdout.strip(), stderr=accumulated_stderr.strip())
 
             # Pulisci il file temporaneo
             try:
