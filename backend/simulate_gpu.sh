@@ -3,7 +3,9 @@
 # $1 = percorso file codice da eseguire (temporaneo)
 
 echo "> Avvio simulazione GPU..."
-sleep $((RANDOM % 4))
+sleep_duration=$((RANDOM % 4))
+echo "> Durata sleep: $sleep_duration secondi"
+sleep $sleep_duration
 echo "> Simulazione completata"
 echo "> File: $1"
 echo "> Questo è l output anche se il processo fallisce" >&2
