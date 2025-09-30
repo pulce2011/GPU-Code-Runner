@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ExerciseSelector from '../components/ExerciseSelector';
 import CodeEditor from '../components/CodeEditor';
@@ -16,6 +16,7 @@ function DashboardPage() {
   const [taskDetails, setTaskDetails] = useState(null);
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const statusMessageRef = useRef(null);
 
   // Carica informazioni utente all'avvio
   useEffect(() => {
@@ -32,6 +33,19 @@ function DashboardPage() {
 
     fetchUserInfo();
   }, []);
+
+  // Scroll automatico al messaggio di stato quando appare
+  useEffect(() => {
+    if (taskDetails?.message && statusMessageRef.current) {
+      // Piccolo delay per assicurarsi che il DOM sia aggiornato
+      setTimeout(() => {
+        statusMessageRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 100);
+    }
+  }, [taskDetails?.message]);
 
   // Gestisce logout e redirect
   const handleLogout = () => {
@@ -276,15 +290,17 @@ function DashboardPage() {
               
               {/* Messaggio con Icona */}
               {taskDetails?.message && (
-                <div className={`rounded-lg p-4 border ${
-                  taskDetails.status === 'completed' ? 'bg-green-50 border-green-200' :
-                  taskDetails.status === 'failed' ? 'bg-red-50 border-red-200' :
-                  taskDetails.status === 'interrupted' ? 'bg-yellow-50 border-yellow-200' :
-                  taskDetails.status === 'running' ? 'bg-blue-50 border-blue-200' :
-                  taskDetails.status === 'pending' ? 'bg-blue-50 border-blue-200' :
-                  taskDetails.status === 'insufficient_credits' ? 'bg-red-50 border-red-200' :
-                  'bg-gray-50 border-gray-200'
-                }`}>
+                <div 
+                  ref={statusMessageRef}
+                  className={`rounded-lg p-4 border ${
+                    taskDetails.status === 'completed' ? 'bg-green-50 border-green-200' :
+                    taskDetails.status === 'failed' ? 'bg-red-50 border-red-200' :
+                    taskDetails.status === 'interrupted' ? 'bg-yellow-50 border-yellow-200' :
+                    taskDetails.status === 'running' ? 'bg-blue-50 border-blue-200' :
+                    taskDetails.status === 'pending' ? 'bg-blue-50 border-blue-200' :
+                    taskDetails.status === 'insufficient_credits' ? 'bg-red-50 border-red-200' :
+                    'bg-gray-50 border-gray-200'
+                  }`}>
                   <div className="flex items-center">
                     <div className={`flex-shrink-0 mr-3 ${
                       taskDetails.status === 'completed' ? 'text-green-500' :
