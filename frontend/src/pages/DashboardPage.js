@@ -260,17 +260,16 @@ function DashboardPage() {
               <CodeEditor
                 exercise={selectedExercise}
                 onCodeChange={setSelectedCode}
-              />
-            </div>
-
-            <div className="flex justify-end mb-8">
-              <RunButton 
-                code={selectedCode} 
-                onOutputChange={handleExecutionOutput}
-                onTaskDetails={handleTaskDetails}
-                onCreditsUpdate={handleCreditsUpdate}
-                onResetResults={handleResetResults}
-                exerciseId={selectedExercise?.id}
+                runButton={
+                  <RunButton 
+                    code={selectedCode} 
+                    onOutputChange={handleExecutionOutput}
+                    onTaskDetails={handleTaskDetails}
+                    onCreditsUpdate={handleCreditsUpdate}
+                    onResetResults={handleResetResults}
+                    exerciseId={selectedExercise?.id}
+                  />
+                }
               />
             </div>
           </>

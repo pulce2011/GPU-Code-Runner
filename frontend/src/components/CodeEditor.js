@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
 // Componente editor Monaco per codice C/C++
-function CodeEditor({ exercise, onCodeChange }) {
+function CodeEditor({ exercise, onCodeChange, runButton }) {
   const [code, setCode] = useState('');
 
   // Carica template funzione quando cambia esercizio
@@ -70,7 +70,7 @@ function CodeEditor({ exercise, onCodeChange }) {
         </div>
 
         {/* Editor Monaco */}
-        <div className="bg-white">
+        <div className="bg-white relative">
           <Editor
             height="400px"
             language="cpp"
@@ -79,6 +79,11 @@ function CodeEditor({ exercise, onCodeChange }) {
             theme="vs-light"
             options={editorOptions}
           />
+
+        <div className="text-xs text-gray-500 absolute bottom-4 right-6 z-10">
+          {code.split('\n').length} righe
+        </div>
+          
         </div>
       </div>
 
@@ -98,9 +103,12 @@ function CodeEditor({ exercise, onCodeChange }) {
             Compilazione: GCC
           </span>
         </div>
-        <div className="text-xs text-gray-500">
-          {code.split('\n').length} righe
-        </div>
+        {/* Bottone Esegui in basso a destra */}
+        {runButton && (
+            <div>
+              {runButton}
+            </div>
+          )}
       </div>
     </div>
   );
