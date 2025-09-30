@@ -22,14 +22,10 @@ function App() {
           } 
         />
         
-        {/* Redirect root alla dashboard */}
+        {/* Redirect root al login */}
         <Route 
           path="/" 
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          } 
+          element={<Navigate to="/login" replace />}
         />
         
         {/* Redirect 404 al login */}
