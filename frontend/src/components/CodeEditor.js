@@ -103,6 +103,7 @@ function CodeEditor({ exercise, onCodeChange, runButton }) {
             Compilazione: GCC
           </span>
         </div>
+        
         {/* Bottone Esegui in basso a destra */}
         {runButton && (
             <div>

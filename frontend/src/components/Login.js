@@ -16,10 +16,11 @@ function Login({ onLogin }) {
       return;
     }
 
+    // Avvia loading
     setLoading(true);
     try {
       const response = await api.post('/token/', { email, password });
-      
+      // Imposta i token nel localStorage e chiama la funzione di login
       setTokens(response.data.access, response.data.refresh);
       onLogin(response.data.access, response.data.refresh);
     } catch (error) {

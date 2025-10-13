@@ -63,7 +63,7 @@ function ExerciseSelector({ onSelect }) {
   return (
     <div className="space-y-4">
 
-      
+      {/* Selezione esercizio */}
       <div className="form-group">
         <label htmlFor="exercise-select" className="form-label">
           Seleziona un esercizio
