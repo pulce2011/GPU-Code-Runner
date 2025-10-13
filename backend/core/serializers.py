@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Exercise, User, Course, Task
 
 
-# Serializzatore per gli esercizi
+### Serializzatore per gli esercizi ###
 class ExerciseSerializer(serializers.ModelSerializer):
     signature = serializers.SerializerMethodField()
 
@@ -14,14 +14,14 @@ class ExerciseSerializer(serializers.ModelSerializer):
         return obj.build_signature()
 
 
-# Serializzatore per i corsi
+### Serializzatore per i corsi ###
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ['id', 'name']
 
 
-# Serializzatore per gli utenti
+### Serializzatore per gli utenti ###
 class UserSerializer(serializers.ModelSerializer):
     course_name = serializers.CharField(source='course.name', read_only=True)
     
@@ -32,7 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
-    # Crea un nuovo utente con password hashata
+    ### Crea un nuovo utente con password hashata ###
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = User(**validated_data)
@@ -41,7 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
-# Serializzatore per i task
+### Serializzatore per i task ###
 class TaskSerializer(serializers.ModelSerializer):
     user_matr = serializers.CharField(source='user.matr', read_only=True)
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)

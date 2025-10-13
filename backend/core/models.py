@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 
 
-# Manager personalizzato per creare utenti con email e matricola invece di username
+### Manager personalizzato per creare utenti con email e matricola invece di username ###
 class UserManager(BaseUserManager):
     def create_user(self, email, matr, first_name, last_name, password=None, **extra_fields):
         if not email:
@@ -35,7 +35,7 @@ class UserManager(BaseUserManager):
         return self.create_user(email, matr, first_name, last_name, password, **extra_fields)
 
 
-# Modello per rappresentare un corso universitario
+### Modello per rappresentare un corso universitario ###
 class Course(models.Model):
     name = models.CharField(max_length=200)
     
@@ -43,7 +43,7 @@ class Course(models.Model):
         return self.name
 
 
-# Modello utente personalizzato con email come login e matricola unica
+### Modello utente personalizzato con email come login e matricola unica ###
 class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
@@ -76,7 +76,7 @@ class User(AbstractUser):
         return False
 
 
-# Modello per esercizi di programmazione con parametri JSON e firma funzione
+### Modello per esercizi di programmazione con parametri JSON e firma funzione ###
 class Exercise(models.Model):
     name = models.CharField(max_length=200)          # Nome funzione
     return_type = models.CharField(max_length=50)    # Tipo di ritorno
@@ -99,7 +99,7 @@ class Exercise(models.Model):
             return signature_line
 
 
-# Modello per rappresentare un task (Richiesta di esecuzione di un esercizio)
+### Modello per rappresentare un task (Richiesta di esecuzione di un esercizio) ###  
 class Task(models.Model):
     STATUS_CHOICES = [
         ('pending', 'In attesa'),

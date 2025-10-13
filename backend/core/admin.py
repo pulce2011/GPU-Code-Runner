@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import Course, User, Exercise, Task
 
 
-# Configurazione admin per gestire i corsi universitari
+### Configurazione admin per gestire i corsi universitari ###
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     list_display = ['name']
@@ -10,7 +10,7 @@ class CourseAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
-# Configurazione admin per gestire gli utenti con email e matricola
+### Configurazione admin per gestire gli utenti con email e matricola ###
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     """Admin configuration for User model."""
@@ -28,7 +28,7 @@ class UserAdmin(admin.ModelAdmin):
     )
 
 
-# Configurazione admin per gestire esercizi di programmazione con parametri JSON
+### Configurazione admin per gestire esercizi di programmazione con parametri JSON ###
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
     list_display = ['name', 'return_type', 'get_courses']
@@ -42,7 +42,7 @@ class ExerciseAdmin(admin.ModelAdmin):
     get_courses.short_description = 'Courses'
 
 
-# Configurazione admin per gestire i task
+### Configurazione admin per gestire i task ###
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = ['id', 'get_user_matr', 'get_exercise_name', 'status', 'credits_cost', 'get_execution_time', 'created_at']

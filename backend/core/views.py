@@ -11,7 +11,6 @@ from rest_framework.decorators import api_view, permission_classes
 from .models import Exercise, Course, User, Task
 from .serializers import ExerciseSerializer, UserSerializer, CourseSerializer, TaskSerializer
 
-
 # =============================================================================
 # AUTHENTICATION & USER MANAGEMENT
 # =============================================================================
