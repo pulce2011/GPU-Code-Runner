@@ -106,14 +106,14 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = 'core.User'
 
 REST_FRAMEWORK = {
-  'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': (
     'rest_framework_simplejwt.authentication.JWTAuthentication',
-  ),
+    ),
 }
 
 CORS_ALLOWED_ORIGINS = [
-  "http://localhost:5173",
-  "http://localhost:3000"
+    "http://localhost:5173",
+    "http://localhost:3000"
 ]
 
 
