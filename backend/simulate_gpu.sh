@@ -9,4 +9,5 @@ sleep $sleep_duration
 echo "> [DEBUG] Standard output"
 echo "> [DEBUG] Standard error" >&2
 
+# Genera un numero casuale per determinare se il task è riuscito o fallito
 exit $((RANDOM % 2))

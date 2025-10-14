@@ -79,6 +79,7 @@ class RunExerciseView(views.APIView):
         if validation_error:
             return validation_error
         
+        # Recupero dati input
         code = request.data['code']
         exercise_id = request.data['exercise_id']
         user = request.user
@@ -87,12 +88,15 @@ class RunExerciseView(views.APIView):
         if not user.has_credits():
             return self._error_response('Crediti insufficienti.', status.HTTP_402_PAYMENT_REQUIRED)
 
+        # Recupero esercizio
         try:
             exercise = Exercise.objects.get(id=exercise_id)
             
+            # Deduce 1 credito per avviare il task
             if not user.reduce_credits(1):
                 return self._error_response('Crediti insufficienti.', status.HTTP_402_PAYMENT_REQUIRED)
             
+            # Crea il task e lo avvia in background
             task = self._create_task(user, exercise, code)
             self._start_task_execution(task)
 
@@ -102,6 +106,7 @@ class RunExerciseView(views.APIView):
                 'message': 'Lavoro avviato con successo'
             })
             
+        # Gestione errori
         except Exercise.DoesNotExist:
             return self._error_response('Esercizio non trovato', status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -138,7 +143,7 @@ class RunExerciseView(views.APIView):
         thread.daemon = True
         thread.start()
 
-    # Esegue il task in background con controllo crediti
+    # Esecuzione del task in background con controllo crediti
     def _execute_task(self, task: Task) -> None:
         tmp_path = None
         try:
@@ -259,13 +264,17 @@ class RunExerciseView(views.APIView):
     
     # Finalizza il task con l'output completo
     def _finalize_task(self, task: Task, process: subprocess.Popen, output_data: Dict[str, Any]) -> None:
+        
+        # Ottiene l'output rimanente dal processo terminato
         remaining_stdout, remaining_stderr = process.communicate()
         final_stdout = output_data['stdout'] + remaining_stdout
         final_stderr = output_data['stderr'] + remaining_stderr
         
+        # Calcolo tempo di esecuzione e crediti utilizzati
         total_seconds = time.time() - output_data['start_time']
         total_credits_used = int(total_seconds)
         
+        # Deduzione crediti se necessario
         if total_credits_used > task.credits_cost:
             remaining_credits = total_credits_used - task.credits_cost
             task.user.reduce_credits(remaining_credits)
