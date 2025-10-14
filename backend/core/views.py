@@ -19,7 +19,7 @@ from .serializers import ExerciseSerializer, UserSerializer, CourseSerializer, T
 class UserInfoView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request) -> Response:
         user = request.user
         serializer = UserSerializer(user)
         return Response(serializer.data)
@@ -31,7 +31,7 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -54,7 +54,7 @@ class ExerciseListView(generics.ListAPIView):
     serializer_class = ExerciseSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Exercise]:
         user = self.request.user
         
         if user.is_superuser:

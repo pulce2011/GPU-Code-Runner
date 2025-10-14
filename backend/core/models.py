@@ -23,7 +23,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, matr, first_name, last_name, password=None, **extra_fields):
+    def create_superuser(self, email, matr, first_name, last_name, password=None, **extra_fields) -> User:
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         
@@ -39,7 +39,7 @@ class UserManager(BaseUserManager):
 class Course(models.Model):
     name = models.CharField(max_length=200)
     
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -56,17 +56,17 @@ class User(AbstractUser):
     
     objects = UserManager()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.first_name} {self.last_name} ({self.matr})"
     
     # Verifica se l'utente ha abbastanza crediti
-    def has_credits(self, amount=1):
+    def has_credits(self, amount=1) -> bool:
         if self.is_superuser or self.is_staff:
             return True
         return self.credits >= amount
     
     # Riduce i crediti dell'utente
-    def reduce_credits(self, amount=1):
+    def reduce_credits(self, amount=1) -> bool:
         if self.is_superuser or self.is_staff:
             return True
         if self.has_credits(amount):
@@ -84,11 +84,11 @@ class Exercise(models.Model):
     comment = models.TextField(blank=True)           # Commento/consegna
     courses = models.ManyToManyField(Course, related_name='exercises')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     # Costruisce la firma della funzione con commenti e parametri
-    def build_signature(self):
+    def build_signature(self) -> str:
         comment_block = f"/*\n{self.comment}\n*/" if self.comment else ""
         param_list = ', '.join([f"{p['type']} {p['name']}" for p in self.params])
         signature_line = f"{self.return_type} {self.name}({param_list})"
@@ -123,24 +123,24 @@ class Task(models.Model):
     process_id = models.IntegerField(null=True, blank=True)
     message = models.TextField(default='', blank=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Task {self.id} - {self.user.matr} - {self.status}"
     
     # Avvia il task
-    def start(self):
+    def start(self) -> None:
         self.status = 'running'
         self.started_at = timezone.now()
         self.message = "Task in esecuzione..."
         self.save()
 
     # Segna il task come in attesa
-    def pending(self):
+    def pending(self) -> None:
         self.status = 'pending'
         self.message = "Task in attesa di esecuzione..."
         self.save()
     
     # Completa il task con successo
-    def complete(self, stdout='', stderr=''):
+    def complete(self, stdout='', stderr='') -> None:
         self.status = 'completed'
         self.finished_at = timezone.now()
         if self.started_at is not None:
@@ -151,7 +151,7 @@ class Task(models.Model):
         self.save()
     
     # Segna il task come fallito
-    def fail(self, stdout='', stderr=''):
+    def fail(self, stdout='', stderr='') -> None:
         self.status = 'failed'
         self.finished_at = timezone.now()
         if self.started_at is not None:
@@ -162,7 +162,7 @@ class Task(models.Model):
         self.save()
     
     # Interrompe il task per crediti esauriti
-    def interrupt(self, stdout='', stderr=''):
+    def interrupt(self, stdout='', stderr='') -> None:
         self.status = 'interrupted'
         self.finished_at = timezone.now()
         if self.started_at is not None:

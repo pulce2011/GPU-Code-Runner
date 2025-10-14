@@ -10,7 +10,7 @@ class ExerciseSerializer(serializers.ModelSerializer):
         model = Exercise
         fields = ['id', 'name', 'return_type', 'params', 'comment', 'signature']
 
-    def get_signature(self, obj):
+    def get_signature(self, obj) -> str:
         return obj.build_signature()
 
 
@@ -33,7 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     ### Crea un nuovo utente con password hashata ###
-    def create(self, validated_data):
+    def create(self, validated_data) -> User:
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
