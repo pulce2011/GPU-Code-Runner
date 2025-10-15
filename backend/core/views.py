@@ -148,7 +148,7 @@ class RunExerciseView(views.APIView):
         tmp_path = None
         try:
             task.start()
-            tmp_path = self._create_temp_file(task.code)
+            tmp_path = self._create_temp_file(task.code, task.exercise)
             process = self._start_process(tmp_path)
             
             task.process_id = process.pid
@@ -165,8 +165,8 @@ class RunExerciseView(views.APIView):
             self._cleanup_temp_file(tmp_path)
     
     # Crea un file temporaneo con il codice
-    def _create_temp_file(self, code: str) -> str:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as f:
+    def _create_temp_file(self, code: str, exercise: Exercise) -> str:
+        with tempfile.NamedTemporaryFile(mode='w', suffix=exercise.file_extension, delete=False, dir=".") as f:
             f.write(code)
             return f.name
     

@@ -83,6 +83,7 @@ class Exercise(models.Model):
     params = models.JSONField(default=list, blank=True)
     comment = models.TextField(blank=True)           # Commento/consegna
     courses = models.ManyToManyField(Course, related_name='exercises')
+    file_extension = models.CharField(max_length=10, default='c')
 
     def __str__(self) -> str:
         return self.name
