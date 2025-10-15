@@ -60,9 +60,6 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
 
   // Polling per risultati task
   const pollTaskStatus = async (taskId) => {
-    let attempts = 0;
-    const maxAttempts = 30;
-    
     const poll = async () => {
       try {
         const response = await api.get(`/tasks/${taskId}/`);
@@ -95,22 +92,12 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
           onTaskDetails?.(task);
         }
         
-        // Continua polling
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 200);
-        } else {
-          onOutputChange?.({
-            stdout: '',
-            stderr: 'Timeout: impossibile ottenere i risultati'
-          });
-        }
+        // Continua polling senza limite di tentativi
+        setTimeout(poll, 200);
       } catch (error) {
         console.error('Errore polling:', error);
-        onOutputChange?.({
-          stdout: '',
-          stderr: 'Errore nel recupero dei risultati'
-        });
+        // Continua a riprovare in caso di errore temporaneo
+        setTimeout(poll, 500);
       }
     };
     
