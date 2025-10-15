@@ -54,7 +54,7 @@ class ExerciseListView(generics.ListAPIView):
     serializer_class = ExerciseSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self) -> QuerySet[Exercise]:
+    def get_queryset(self):
         user = self.request.user
         
         if user.is_superuser:
