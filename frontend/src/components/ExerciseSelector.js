@@ -13,7 +13,9 @@ function ExerciseSelector({ onSelect }) {
       try {
         setLoading(true);
         const response = await api.get('/exercises/');
-        setExercises(response.data);
+        // Ordina esercizi alfabeticamente per nome
+        const sortedExercises = response.data.sort((a, b) => a.name.localeCompare(b.name));
+        setExercises(sortedExercises);
       } catch (error) {
         console.error('Errore nel recupero esercizi:', error);
       } finally {
