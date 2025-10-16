@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import api from '../services/api';
 
 // Componente pulsante per esecuzione codice
@@ -30,8 +31,13 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
           message: 'Task in attesa di esecuzione...'
         });
         
-        // Avvia polling
-        setTimeout(() => pollTaskStatus(response.data.task_id), 200);
+        // Avvia WebSocket per aggiornamenti realtime; fallback al polling
+        try {
+          startTaskWebSocket(response.data.task_id);
+        } catch (e) {
+          console.error('WebSocket init error:', e);
+          setTimeout(() => pollTaskStatus(response.data.task_id), 200);
+        }
       } else {
         // Risposta legacy
         onOutputChange?.({
@@ -56,6 +62,67 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
     } finally {
       setLoading(false);
     }
+  };
+
+  // WebSocket realtime per risultati task (fallback al polling su errore/chiusura)
+  const startTaskWebSocket = (taskId) => {
+    const base = 'ws://127.0.0.1:8000';
+    const socket = new WebSocket(`${base}/ws/tasks/${taskId}/`);
+
+    let closedOrErrored = false;
+
+    socket.onopen = () => {
+      // Nessuna azione necessaria all'apertura
+    };
+
+    socket.onmessage = async (event) => {
+      try {
+        const task = JSON.parse(event.data);
+
+        // Task completato
+        if ([ 'completed', 'failed', 'interrupted' ].includes(task.status)) {
+          onOutputChange?.({
+            stdout: task.stdout || '',
+            stderr: task.stderr || ''
+          });
+          onTaskDetails?.(task);
+
+          // Aggiorna crediti
+          if (onCreditsUpdate) {
+            try {
+              const userResponse = await api.get('/user/');
+              onCreditsUpdate(userResponse.data.credits);
+            } catch (error) {
+              console.error('Errore aggiornamento crediti:', error);
+            }
+          }
+          socket.close();
+          return;
+        }
+
+        // Task in esecuzione - mostra solo dettagli, nessun output
+        if (task.status === 'running' || task.status === 'pending') {
+          onOutputChange?.(null);
+          onTaskDetails?.(task);
+        }
+      } catch (e) {
+        console.error('WebSocket parse error:', e);
+      }
+    };
+
+    socket.onerror = (err) => {
+      closedOrErrored = true;
+      console.error('WebSocket error:', err);
+      if (socket && socket.readyState !== WebSocket.CLOSED) {
+        socket.close();
+      }
+    };
+
+    socket.onclose = () => {
+      if (!closedOrErrored) closedOrErrored = true;
+      // Fallback al polling se la connessione si chiude prima del completamento
+      setTimeout(() => pollTaskStatus(taskId), 200);
+    };
   };
 
   // Polling per risultati task
@@ -133,3 +200,12 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
 }
 
 export default RunButton;
+
+RunButton.propTypes = {
+  code: PropTypes.string.isRequired,
+  exerciseId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  onOutputChange: PropTypes.func,
+  onTaskDetails: PropTypes.func,
+  onCreditsUpdate: PropTypes.func,
+  onResetResults: PropTypes.func,
+};

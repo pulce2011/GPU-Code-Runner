@@ -10,6 +10,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from .models import Exercise, Course, User, Task
 from .serializers import ExerciseSerializer, UserSerializer, CourseSerializer, TaskSerializer
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 # =============================================================================
 # AUTHENTICATION & USER MANAGEMENT
@@ -148,11 +150,13 @@ class RunExerciseView(views.APIView):
         tmp_path = None
         try:
             task.start()
+            self._ws_broadcast(task)
             tmp_path = self._create_temp_file(task.code, task.exercise)
             process = self._start_process(tmp_path, task.exercise)
             
             task.process_id = process.pid
             task.save()
+            self._ws_broadcast(task)
 
             output_data = self._monitor_process(process, task)
             
@@ -161,6 +165,7 @@ class RunExerciseView(views.APIView):
             
         except Exception as e:
             task.fail(stdout='', stderr=f'Errore durante l\'esecuzione: {str(e)}')
+            self._ws_broadcast(task)
         finally:
             self._cleanup_temp_file(tmp_path)
     
@@ -218,6 +223,7 @@ class RunExerciseView(views.APIView):
                         stdout=accumulated_stdout.strip(), 
                         stderr=accumulated_stderr.strip()
                     )
+                    self._ws_broadcast(task)
         
         return {
             'stdout': accumulated_stdout,
@@ -251,6 +257,7 @@ class RunExerciseView(views.APIView):
                 task.user.reduce_credits(credits_to_deduct)
                 task.credits_cost = credits_needed
                 task.save()
+                self._ws_broadcast(task)
             return False
         else:
             self._terminate_process(process)
@@ -297,6 +304,7 @@ class RunExerciseView(views.APIView):
             task.complete(stdout=final_stdout.strip(), stderr=final_stderr.strip())
         else:
             task.fail(stdout=final_stdout.strip(), stderr=final_stderr.strip())
+        self._ws_broadcast(task)
     
     # Pulisce il file temporaneo
     def _cleanup_temp_file(self, tmp_path: Optional[str]) -> None:
@@ -305,6 +313,23 @@ class RunExerciseView(views.APIView):
                 os.unlink(tmp_path)
             except Exception:
                 pass
+
+    # =============================
+    # WebSocket helpers
+    # =============================
+    def _ws_broadcast(self, task: Task) -> None:
+        try:
+            channel_layer = get_channel_layer()
+            if not channel_layer:
+                return
+            data = TaskSerializer(task).data
+            async_to_sync(channel_layer.group_send)(
+                f'task_{task.id}',
+                { 'type': 'task_update', 'data': data }
+            )
+        except Exception:
+            # Evita che errori WS interrompano l'esecuzione
+            pass
 
 # =============================================================================
 # TASK QUERY & RETRIEVAL
