@@ -78,12 +78,13 @@ class User(AbstractUser):
 
 ### Modello per esercizi di programmazione con parametri JSON e firma funzione ###
 class Exercise(models.Model):
-    name = models.CharField(max_length=200)          # Nome funzione
-    return_type = models.CharField(max_length=50)    # Tipo di ritorno
+    name = models.CharField(max_length=200)
+    return_type = models.CharField(max_length=50)
     params = models.JSONField(default=list, blank=True)
-    comment = models.TextField(blank=True)           # Commento/consegna
+    comment = models.TextField(blank=True) 
     courses = models.ManyToManyField(Course, related_name='exercises')
     file_extension = models.CharField(max_length=10, default='c')
+    extra_files = models.JSONField(default=list, blank=True)
 
     def __str__(self) -> str:
         return self.name

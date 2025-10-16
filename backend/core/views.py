@@ -34,7 +34,7 @@ class RegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -149,7 +149,7 @@ class RunExerciseView(views.APIView):
         try:
             task.start()
             tmp_path = self._create_temp_file(task.code, task.exercise)
-            process = self._start_process(tmp_path)
+            process = self._start_process(tmp_path, task.exercise)
             
             task.process_id = process.pid
             task.save()
@@ -171,9 +171,18 @@ class RunExerciseView(views.APIView):
             return f.name
     
     # Avvia il processo di esecuzione
-    def _start_process(self, tmp_path: str) -> subprocess.Popen:
+    def _start_process(self, tmp_path: str, exercise: Exercise) -> subprocess.Popen:
+        extra_args = []
+        try:
+            # Ensure it's a list of strings
+            extra_args = [str(x) for x in (exercise.extra_files or [])]
+        except Exception:
+            extra_args = []
+
+        print(f"Extra args: {extra_args}")
+
         return subprocess.Popen(
-            ['bash', 'simulate_gpu.sh', tmp_path],
+            ['bash', 'simulate_gpu.sh', tmp_path, *extra_args],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -225,7 +234,7 @@ class RunExerciseView(views.APIView):
                 line = process.stderr.readline()
                 if line:
                     stderr += line
-        except:
+        except Exception:
             pass
         return stdout, stderr
     
@@ -291,7 +300,7 @@ class RunExerciseView(views.APIView):
         if tmp_path:
             try:
                 os.unlink(tmp_path)
-            except:
+            except Exception:
                 pass
 
 # =============================================================================
