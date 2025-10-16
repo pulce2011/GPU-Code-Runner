@@ -174,15 +174,18 @@ class RunExerciseView(views.APIView):
     def _start_process(self, tmp_path: str, exercise: Exercise) -> subprocess.Popen:
         extra_args = []
         try:
-            # Ensure it's a list of strings
+            # Converte l'elenco di file extra in una lista di stringhe
             extra_args = [str(x) for x in (exercise.extra_files or [])]
-        except Exception:
+        except Exception as e:
+            print(f"Error converting extra_files to args: {e}")
             extra_args = []
-
-        print(f"Extra args: {extra_args}")
+        
+        # Genera il comando da eseguire
+        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simulate_gpu.sh'))
+        cmd = ['bash', script_path, tmp_path, *extra_args]
 
         return subprocess.Popen(
-            ['bash', 'simulate_gpu.sh', tmp_path, *extra_args],
+            cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
