@@ -8,13 +8,6 @@ for arg in "$@"; do
 done
 echo "> [INFO] Total args: $#"
 
-# Simulazione output progressivo (stdout e stderr) con attese
-for i in {1..5}; do
-    echo "> [STDOUT] step $i at $(date +%H:%M:%S)"
-    echo "> [STDERR] step $i at $(date +%H:%M:%S)" >&2
-    sleep 1
-done
-
 echo "> [STDOUT] finishing at $(date +%H:%M:%S)"
 echo "> [STDERR] finishing at $(date +%H:%M:%S)" >&2
 
