@@ -99,9 +99,12 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
           return;
         }
 
-        // Task in esecuzione - mostra solo dettagli, nessun output
+        // Task in esecuzione/pending - aggiorna dettagli e output incrementale
         if (task.status === 'running' || task.status === 'pending') {
-          onOutputChange?.(null);
+          onOutputChange?.({
+            stdout: task.stdout || '',
+            stderr: task.stderr || ''
+          });
           onTaskDetails?.(task);
         }
       } catch (e) {

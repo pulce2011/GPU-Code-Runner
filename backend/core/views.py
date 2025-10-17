@@ -201,6 +201,8 @@ class RunExerciseView(views.APIView):
     def _monitor_process(self, process: subprocess.Popen, task: Task) -> Dict[str, Any]:
         accumulated_stdout = ""
         accumulated_stderr = ""
+        last_broadcast_stdout_len = 0
+        last_broadcast_stderr_len = 0
         start_time = time.time()
         task_interrupted = False
         
@@ -211,6 +213,19 @@ class RunExerciseView(views.APIView):
             accumulated_stdout, accumulated_stderr = self._read_process_output(
                 process, accumulated_stdout, accumulated_stderr
             )
+            # Se c'è nuovo output, aggiorna il task e invia un broadcast per lo streaming realtime
+            if (len(accumulated_stdout) > last_broadcast_stdout_len) or (len(accumulated_stderr) > last_broadcast_stderr_len):
+                try:
+                    task.stdout = accumulated_stdout
+                    task.stderr = accumulated_stderr
+                    # Non cambiamo lo status qui: resta 'running'
+                    task.save(update_fields=["stdout", "stderr"])  # riduce scritture inutili
+                    self._ws_broadcast(task)
+                except Exception:
+                    # Non interrompere il loop in caso di errori di I/O/WS
+                    pass
+                last_broadcast_stdout_len = len(accumulated_stdout)
+                last_broadcast_stderr_len = len(accumulated_stderr)
             
             elapsed_seconds = time.time() - start_time
             if elapsed_seconds >= 1.0:
