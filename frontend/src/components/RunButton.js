@@ -31,12 +31,11 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
           message: 'Task in attesa di esecuzione...'
         });
         
-        // Avvia WebSocket per aggiornamenti realtime; fallback al polling
+        // Avvia WebSocket per aggiornamenti realtime
         try {
           startTaskWebSocket(response.data.task_id);
         } catch (e) {
           console.error('WebSocket init error:', e);
-          setTimeout(() => pollTaskStatus(response.data.task_id), 200);
         }
       } else {
         // Risposta legacy
@@ -64,7 +63,7 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
     }
   };
 
-  // WebSocket realtime per risultati task (fallback al polling su errore/chiusura)
+  // WebSocket realtime per risultati task
   const startTaskWebSocket = (taskId) => {
     const base = 'ws://127.0.0.1:8000';
     const socket = new WebSocket(`${base}/ws/tasks/${taskId}/`);
@@ -120,55 +119,7 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
 
     socket.onclose = () => {
       if (!closedOrErrored) closedOrErrored = true;
-      // Fallback al polling se la connessione si chiude prima del completamento
-      setTimeout(() => pollTaskStatus(taskId), 200);
     };
-  };
-
-  // Polling per risultati task
-  const pollTaskStatus = async (taskId) => {
-    const poll = async () => {
-      try {
-        const response = await api.get(`/tasks/${taskId}/`);
-        const task = response.data;
-        
-        // Task completato
-        if (['completed', 'failed', 'interrupted'].includes(task.status)) {
-          onOutputChange?.({
-            stdout: task.stdout || '',
-            stderr: task.stderr || ''
-          });
-          
-          onTaskDetails?.(task);
-          
-          // Aggiorna crediti
-          if (onCreditsUpdate) {
-            try {
-              const userResponse = await api.get('/user/');
-              onCreditsUpdate(userResponse.data.credits);
-            } catch (error) {
-              console.error('Errore aggiornamento crediti:', error);
-            }
-          }
-          return;
-        }
-        
-        // Task in esecuzione - mostra solo dettagli, nessun output
-        if (task.status === 'running') {
-          onOutputChange?.(null);
-          onTaskDetails?.(task);
-        }
-        
-        // Continua polling senza limite di tentativi
-        setTimeout(poll, 200);
-      } catch (error) {
-        console.error('Errore polling:', error);
-        // Continua a riprovare in caso di errore temporaneo
-        setTimeout(poll, 500);
-      }
-    };
-    
-    setTimeout(poll, 200);
   };
 
   return (
