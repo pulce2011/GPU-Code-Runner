@@ -25,6 +25,8 @@
 - **JWT Authentication** (SimpleJWT) - Autenticazione sicura
 - **SQLite** - Database di sviluppo
 - **CORS** - Gestione cross-origin requests
+- **Django Channels** - WebSocket per aggiornamenti realtime
+- **Uvicorn (ASGI)** - Application server per sviluppo
 - **Bash Scripting** - Simulazione esecuzione GPU
 - **Threading** - Esecuzione asincrona dei task
 - **Subprocess** - Gestione processi esterni
@@ -76,9 +78,9 @@ python manage.py generate_courses
 python manage.py generate_exercises
 ```
 
-6. **Avvia il server backend:**
+6. **Avvia il server backend (ASGI/Uvicorn):**
 ```bash
-python manage.py runserver 0.0.0.0:8000
+uvicorn backend.asgi:application --host 0.0.0.0 --port 8000 --reload
 ```
 
 7. **Accedi all'interfaccia amministrativa:**
@@ -112,7 +114,7 @@ python manage.py clear_exercises
 ```bash 
 source venv/bin/activate
 cd backend
-python manage.py runserver 0.0.0.0:8000
+uvicorn backend.asgi:application --host 0.0.0.0 --port 8000 --reload
 ```
 
 #### Frontend:
@@ -130,6 +132,11 @@ Il sistema utilizza JWT (JSON Web Tokens) per l'autenticazione:
 - **Refresh Token**: Valido per 24 ore
 - **Auto-refresh**: Rinnovo automatico dei token
 - **User Model Personalizzato**: Email come username, matricola unica
+
+### Endpoints Autenticazione (SimpleJWT)
+- `POST /api/token/` - Ottieni access e refresh token
+- `POST /api/token/refresh/` - Rinnova l'access token
+- `GET /api/user/` - Informazioni utente corrente (autenticato)
 
 ### Tipi di Utenti
 - **Studenti**: Possono accedere solo agli esercizi del proprio corso
@@ -178,76 +185,59 @@ Il sistema utilizza JWT (JSON Web Tokens) per l'autenticazione:
 - Invio codice al backend per compilazione
 - Simulazione GPU tramite script bash (`simulate_gpu.sh`)
 - Esecuzione asincrona con threading
-- Visualizzazione stdout e stderr
+- Visualizzazione stdout e stderr in tempo reale (streaming via WebSocket)
 - File temporanei per esecuzione sicura
 - Gestione errori di compilazione ed esecuzione
-
-### Stati dei Task
-- **Pending**: Task in attesa di esecuzione
-- **Running**: Task in esecuzione
-- **Completed**: Task completato con successo
-- **Failed**: Task fallito
-- **Interrupted**: Task interrotto per crediti esauriti
-
-### Feedback Visivo
-- **Spinner animato** per stati di attesa
-- **Icone colorate** per ogni stato del task
-- **Messaggi dedicati** per ogni situazione
-- **Sezioni condizionali** per output e dettagli
-
-### Responsive Design
-- Layout adattivo per desktop e mobile
-- Componenti ottimizzati per diverse dimensioni schermo
 
 ## 📊 Modelli Dati
 
 ### User (Utente Personalizzato)
-- **Email**: Campo unico per login
-- **Matricola**: Campo unico identificativo studente
-- **Nome e Cognome**: Informazioni personali
-- **Course**: Collegamento al corso di laurea
-- **Credits**: Numero di crediti disponibili
-- **has_credits()**: Metodo per verificare crediti disponibili
-- **reduce_credits()**: Metodo per dedurre crediti
+- `email` (unico, login)
+- `matr` (matricola, unico)
+- `first_name`, `last_name`
+- `course` (FK opzionale a `Course`)
+- `credits` (int, default 100)
+- Metodi: `has_credits(amount=1)`, `reduce_credits(amount=1)` (illimitati per staff/superuser)
 
 ### Course (Corso)
-- **Nome**: Nome del corso di laurea
-- **Relazione**: Many-to-Many con Exercise
+- `name`
+- Relazioni: `exercises` (Many-to-Many da `Exercise`)
 
 ### Exercise (Esercizio)
-- **Nome**: Nome della funzione
-- **Return Type**: Tipo di ritorno della funzione
-- **Params**: Parametri JSON con tipo e nome
-- **Comment**: Consegna/commento dell'esercizio
-- **Courses**: Collegamento ai corsi (Many-to-Many)
-- **build_signature()**: Metodo per generare template funzione
+- `name`
+- `return_type`
+- `params` (JSONField, default lista)
+- `comment` (testo)
+- `courses` (Many-to-Many con `Course`)
+- `file_extension` (default `.c`)
+- `extra_files` (JSONField, default lista)
+- Metodo: `build_signature()` (genera template funzione commentato)
 
-### Task (Nuovo)
-- **User**: Collegamento all'utente
-- **Exercise**: Collegamento all'esercizio
-- **Code**: Codice da eseguire
-- **Status**: Stato del task (pending, running, completed, failed, interrupted)
-- **Stdout/Stderr**: Output del processo
-- **Credits Cost**: Crediti utilizzati
-- **Execution Time**: Tempo di esecuzione
-- **Process ID**: ID del processo in esecuzione
-- **Message**: Messaggio di stato
-- **Metodi**: start(), pending(), complete(), fail(), interrupt()
+### Task
+- `user` (FK `User`)
+- `exercise` (FK `Exercise`)
+- `code` (testo)
+- `status` (`pending`, `running`, `completed`, `failed`, `interrupted`)
+- `created_at`, `started_at`, `finished_at`
+- `total_execution_time` (Duration)
+- `stdout`, `stderr` (testo, aggiornati anche incrementale via WS)
+- `credits_cost` (int, default 1)
+- `process_id` (int, opzionale)
+- `message` (testo di stato)
+- Metodi: `start()`, `pending()`, `complete(stdout, stderr)`, `fail(stdout, stderr)`, `interrupt(stdout, stderr)`
 
 ## 🔄 API Endpoints
-
-### Autenticazione
-- `POST /api/auth/register/` - Registrazione utente
-- `POST /api/auth/login/` - Login utente
-- `GET /api/auth/user/` - Informazioni utente corrente
 
 ### Esercizi e Corsi
 - `GET /api/exercises/` - Lista esercizi per corso utente (tutti per superuser)
 - `GET /api/courses/` - Lista corsi disponibili
 
 ### Esecuzione
-- `POST /api/run/` - Esecuzione codice C/C++ (ritorna task_id)
+- `POST /api/run/` - Esecuzione codice C/C++ (ritorna `task_id`)
 - `GET /api/tasks/{id}/` - Stato e dettagli del task
+
+### WebSocket
+- `WS /ws/tasks/{id}/` - Aggiornamenti realtime (stato, stdout/stderr parziali e finali)
 
 ## 🚀 Deployment
 
