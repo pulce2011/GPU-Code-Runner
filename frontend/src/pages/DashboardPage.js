@@ -14,6 +14,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [executionOutput, setExecutionOutput] = useState(null);
   const [taskDetails, setTaskDetails] = useState(null);
+  const [nowTick, setNowTick] = useState(Date.now());
   const navigate = useNavigate();
   const { logout } = useAuth();
   const statusMessageRef = useRef(null);
@@ -46,6 +47,15 @@ function DashboardPage() {
       }, 100);
     }
   }, [taskDetails?.message]);
+
+  // Tick temporale per aggiornare la durata in tempo reale durante running/pending
+  useEffect(() => {
+    if (taskDetails?.started_at && (taskDetails.status === 'running' || taskDetails.status === 'pending')) {
+      const intervalId = setInterval(() => setNowTick(Date.now()), 250);
+      return () => clearInterval(intervalId);
+    }
+    return undefined;
+  }, [taskDetails?.started_at, taskDetails?.status]);
 
   // Gestisce logout e redirect
   const handleLogout = () => {
@@ -94,6 +104,14 @@ function DashboardPage() {
       }
     }
     return 'N/A';
+  };
+
+  // Formatta millisecondi in stringa "secondi:millis"
+  const formatMillis = (ms) => {
+    if (!Number.isFinite(ms) || ms < 0) return 'N/A';
+    const secs = Math.floor(ms / 1000);
+    const millis = Math.floor(ms % 1000);
+    return `${secs}:${millis.toString().padStart(3, '0')}`;
   };
 
   // Ottiene classe CSS per status
@@ -327,8 +345,8 @@ function DashboardPage() {
                 </div>
               )}
 
-              {/* Dettagli Task */}
-              {taskDetails && ['completed', 'failed', 'interrupted'].includes(taskDetails.status) && (
+              {/* Dettagli Task (live durante running/pending e finale) */}
+              {taskDetails && (
                 <div>
                   <div className="flex items-center mb-2">
                     <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
@@ -352,7 +370,19 @@ function DashboardPage() {
                       </div>
                       <div>
                         <span className="font-medium text-blue-800">Tempo totale:</span>
-                        <span className="ml-2 text-blue-700">{formatDuration(taskDetails.total_execution_time)}</span>
+                        <span className="ml-2 text-blue-700">
+                          {(() => {
+                            if (taskDetails?.status === 'completed' || taskDetails?.status === 'failed' || taskDetails?.status === 'interrupted') {
+                              return formatDuration(taskDetails.total_execution_time);
+                            }
+                            if (taskDetails?.started_at) {
+                              const started = new Date(taskDetails.started_at).getTime();
+                              const liveMs = nowTick - started;
+                              return formatMillis(liveMs);
+                            }
+                            return 'N/A';
+                          })()}
+                        </span>
                       </div>
                       <div>
                         <span className="font-medium text-blue-800">Avviato:</span>
