@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { setTokens } from '../services/api';
 
 // Hook personalizzato per gestione autenticazione JWT
@@ -12,7 +12,7 @@ export function useAuth() {
   };
 
   // Verifica autenticazione
-  const checkAuth = () => {
+  const checkAuth = useCallback(() => {
     const accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
     
@@ -23,7 +23,7 @@ export function useAuth() {
       clearTokens();
     }
     setLoading(false);
-  };
+  }, []);
 
   // Pulisce token
   const clearTokens = () => {
@@ -48,8 +48,9 @@ export function useAuth() {
 
   // Controlla auth all'avvio
   useEffect(() => {
-    setTimeout(checkAuth, 100);
-  }, []);
+    const t = setTimeout(checkAuth, 100);
+    return () => clearTimeout(t);
+  }, [checkAuth]);
 
   return { isAuthenticated, loading, login, logout };
 }
