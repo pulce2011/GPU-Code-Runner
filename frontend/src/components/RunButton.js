@@ -65,7 +65,7 @@ function RunButton({ code, onOutputChange, onTaskDetails, onCreditsUpdate, onRes
 
   // WebSocket realtime per risultati task
   const startTaskWebSocket = (taskId) => {
-    const base = 'ws://127.0.0.1:8000';
+    const base = process.env.REACT_APP_WS_BASE || 'ws://127.0.0.1:8000';
     const socket = new WebSocket(`${base}/ws/tasks/${taskId}/`);
 
     let closedOrErrored = false;

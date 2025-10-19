@@ -12,13 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-
-# =============================================================================
-# SETTINGS
-# =============================================================================
-SET_CREDITS = 10 #Numero di crediti da assegnare ogni giorno
-
-
+from decouple import config, Csv
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,12 +23,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-pq9(0*e&prbo=*&#pkqpso))vc@@6$f#3d_un=@zx1$krd5p()'
+# Read from environment; falls back to previous dev key for convenience.
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', cast=bool, default=True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='')
 
 
 # Application definition
@@ -122,10 +117,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000"
-]
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', cast=Csv(), default='http://localhost:5173,http://localhost:3000')
 
 
 # Internationalization
@@ -158,4 +150,4 @@ CHANNEL_LAYERS = {
 }
 
 # Daily credits default
-DAILY_CREDITS = int(os.environ.get('DAILY_CREDITS', SET_CREDITS))
+DAILY_CREDITS = config('DAILY_CREDITS', cast=int, default=10)
