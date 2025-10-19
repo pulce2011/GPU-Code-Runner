@@ -150,4 +150,4 @@ CHANNEL_LAYERS = {
 }
 
 # Daily credits default
-DAILY_CREDITS = config('DAILY_CREDITS', cast=int, default=10)
+DAILY_CREDITS = config('DAILY_CREDITS_UPDATE', cast=int, default=10)
