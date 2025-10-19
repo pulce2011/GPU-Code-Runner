@@ -28,7 +28,7 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 # =============================================================================
 # PYTHON VIRTUAL ENVIRONMENT
 # =============================================================================
-log_section SETUP
+log_section CONFIGURAZIONE
 VENV_ACTIVATED=0
 check_venv() {
     for _venv_dir in "$BACKEND_DIR/.venv" "$ROOT_DIR/.venv" "$BACKEND_DIR/venv" "$ROOT_DIR/venv"; do
@@ -41,72 +41,99 @@ check_venv() {
 
 for _venv_dir in "$BACKEND_DIR/.venv" "$ROOT_DIR/.venv" "$BACKEND_DIR/venv" "$ROOT_DIR/venv"; do
     if [ -f "${_venv_dir}/bin/activate" ]; then
-        log_info "Activating Python venv at ${_venv_dir}"
+        log_info "Attivazione ambiente virtuale Python '${_venv_dir}'"
         source "${_venv_dir}/bin/activate"
         VENV_ACTIVATED=1
         if command -v python >/dev/null 2>&1; then
             PY_VER=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:3])))' 2>/dev/null || echo "?")
             PY_BIN=$(command -v python || echo "python")
-            log_ready "Python venv active (python=${PY_BIN}, version=${PY_VER})"
+            log_ready "Ambiente virtuale Python attivo (versione=${PY_VER})"
         else
-            log_warn "Python not found after venv activation"
+            log_warn "Python non trovato dopo l'attivazione del venv"
         fi
         break
     fi
 done
 
 if check_venv; then
-    log_info "Installing backend requirements from '$BACKEND_DIR/requirements.txt'"
+    log_info "Installazione dipendenze backend da '$BACKEND_DIR/requirements.txt'"
     if nohup pip install -r "$BACKEND_DIR/requirements.txt" >/dev/null 2>&1 < /dev/null; then
-        log_ready "Requirements installed successfully"
+        log_ready "Dipendenze installate correttamente"
     else
-        log_error "Failed to install requirements"
+        log_error "Installazione dipendenze fallita"
         exit 1
     fi
 else
-    log_error "No Python virtual environment found"
+    log_error "Nessun ambiente virtuale Python trovato"
     exit 1
 fi
 
 # =============================================================================
 # PATHS
 # =============================================================================
-log_section PATHS
-log_info "ROOT_DIR= '$ROOT_DIR'"
-log_info "BACKEND_DIR= '$BACKEND_DIR'"
-log_info "FRONTEND_DIR= '$FRONTEND_DIR'"
-log_debug "VENV_ACTIVATED= '$(check_venv && echo "yes" || echo "no")'"
+log_section PERCORSI
+log_info "ROOT_DIR = '$ROOT_DIR'"
+log_info "BACKEND_DIR = '$BACKEND_DIR'"
+log_info "FRONTEND_DIR = '$FRONTEND_DIR'"
+log_info "VENV_ACTIVATED= '$(check_venv && echo "yes" || echo "no")'"
 
 # =============================================================================
 # USER CONFIRMATION
 # =============================================================================
 
 if [ "$VENV_ACTIVATED" = "0" ]; then
-    log_error "No Python virtual environment found"
+    log_error "Nessun ambiente virtuale Python trovato"
     exit 1
 fi
 
 echo; echo
-read -r -p "Proceed to start backend and frontend? (Y/n) " RESP
-RESP=${RESP:-Y}
-if [[ "$RESP" != "Y" && "$RESP" != "y" ]]; then
-    log_info "Aborted by user."
+read -r -p "Procedere con l'avvio di backend e frontend? (S/n) " RESP
+RESP=${RESP:-S}
+if [[ "$RESP" != "Y" && "$RESP" != "y" && "$RESP" != "S" && "$RESP" != "s" ]]; then
+    log_info "Operazione annullata dall'utente."
     exit 0
 fi
 clear
+
+# =============================================================================
+# DAILY CREDIT RESET @ 00:00
+# =============================================================================
+log_section CRON
+log_info "Configuro il reset giornaliero dei crediti alle 00:00"
+
+CRON_TAG="# GPU-Code-Runner:reset_daily_credits"
+CRON_LINE="0 0 * * * cd \"$BACKEND_DIR\" && \"$PY_BIN\" manage.py reset_daily_credits > /dev/null 2>> /tmp/reset_daily_credits.err.log ${CRON_TAG}"
+
+# Read existing crontab
+_existing_cron=$(crontab -l 2>/dev/null || true)
+if echo "$_existing_cron" | grep -F "${CRON_TAG}" >/dev/null 2>&1; then
+    {
+        echo "$_existing_cron" | grep -vF "${CRON_TAG}"
+        echo "$CRON_LINE"
+    } | crontab -
+    log_ready "Voce cron aggiornata (ogni giorno alle 00:00)"
+else
+    {
+        echo "$_existing_cron"
+        echo "$CRON_LINE"
+    } | crontab -
+    log_ready "Voce cron aggiunta (ogni giorno alle 00:00)"
+fi
 
 # =============================================================================
 # PRE-CLEANUP PORTS
 # =============================================================================
 kill_port() {
     local port="$1"
-    log_debug "Pre-cleanup: killing any process on :${port} ..."
+    log_debug "Terminazione di eventuali processi su :${port}..."
     if command -v lsof >/dev/null 2>&1; then
         local pids
         pids=$(lsof -ti TCP:"${port}" -sTCP:LISTEN 2>/dev/null || true)
         if [ -n "${pids}" ]; then
-            log_warn "Found PIDs on :${port}: ${pids} — sending SIGKILL"
+            log_warn "Trovati PID su :${port}: ${pids} — invio SIGKILL"
             kill -9 ${pids} 2>/dev/null || true
+        else
+            log_ready "Nessun processo su :${port}"
         fi
     fi
     if command -v fuser >/dev/null 2>&1; then
@@ -114,6 +141,7 @@ kill_port() {
     fi
 }
 
+log_section PULIZIA
 kill_port 8000
 kill_port 3000
 
@@ -130,7 +158,7 @@ fi
 # BACKEND STARTUP
 # =============================================================================
 log_section BACKEND
-log_info "Starting Uvicorn on :8000 (reload)"
+log_info "Avvio backend su :8000 (uvicorn)"
 pushd "$BACKEND_DIR" >/dev/null
 "${UVICORN_CMD[@]}" backend.asgi:application --host 0.0.0.0 --port 8000 --reload &
 BACK_PID=$!
@@ -152,31 +180,44 @@ wait_for_port() {
 }
 
 if wait_for_port 127.0.0.1 8000 10; then
-    log_ready "Backend listening on :8000"
+    log_ready "Backend in ascolto su :8000"
 else
-    log_error "Backend not reachable on :8000 after 10s"
+    log_error "Backend non raggiungibile su :8000 dopo 10s"
 fi
 
 # =============================================================================
 # FRONTEND STARTUP
 # =============================================================================
 log_section FRONTEND
-log_info "Starting React dev server on :3000 (in background)"
+log_info "Avvio frontend su :3000"
 pushd "$FRONTEND_DIR" >/dev/null
 nohup npm start >/tmp/frontend.log 2>&1 </dev/null &
 FRONT_PID=$!
 popd >/dev/null
-log_ready "Frontend running in background (pid=$FRONT_PID), logs in /tmp/frontend.log"
+log_ready "Frontend in esecuzione in background (pid=$FRONT_PID), log in /tmp/frontend.log"
+
+log_section ESECUZIONE
 
 # =============================================================================
 # SIGNAL TRAPS
 # =============================================================================
+CLEANED_UP=0
 cleanup() {
-    log_section SHUTDOWN
-    log_warn "Stopping processes ..."
-    [ -n "${BACK_PID:-}" ] && log_warn "Stopping backend (pid=$BACK_PID)" && kill "$BACK_PID" 2>/dev/null || true
-    [ -n "${FRONT_PID:-}" ] && log_warn "Stopping frontend (pid=$FRONT_PID)" && kill "$FRONT_PID" 2>/dev/null || true
-    echo
+    log_section CHIUSURA
+    if [ "${CLEANED_UP}" = "1" ]; then
+        return 0
+    fi
+    CLEANED_UP=1
+    [ -n "${BACK_PID:-}" ] && log_warn "Arresto backend (pid=$BACK_PID)" && kill "$BACK_PID" 2>/dev/null || true
+    [ -n "${FRONT_PID:-}" ] && log_warn "Arresto frontend (pid=$FRONT_PID)" && kill "$FRONT_PID" 2>/dev/null || true
+	# Rimuove la voce cron creata in precedenza (se presente)
+	if crontab -l >/dev/null 2>&1; then
+		_existing_cron=$(crontab -l 2>/dev/null || true)
+		if echo "$_existing_cron" | grep -F "${CRON_TAG}" >/dev/null 2>&1; then
+			echo "$_existing_cron" | grep -vF "${CRON_TAG}" | crontab -
+			log_warn "Arresto cron ('${CRON_TAG}')"
+		fi
+	fi
 }
 
 on_exit() {
@@ -185,6 +226,8 @@ on_exit() {
 }
 
 trap on_exit EXIT
-trap cleanup INT TERM
+# Su SIGINT/SIGTERM, uscire per attivare la trap EXIT (ed eseguire cleanup una sola volta)
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 wait "$BACK_PID"

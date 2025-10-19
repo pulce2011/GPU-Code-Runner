@@ -11,6 +11,15 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+# =============================================================================
+# SETTINGS
+# =============================================================================
+SET_CREDITS = 10 #Numero di crediti da assegnare ogni giorno
+
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -147,3 +156,6 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     }
 }
+
+# Daily credits default
+DAILY_CREDITS = int(os.environ.get('DAILY_CREDITS', SET_CREDITS))
