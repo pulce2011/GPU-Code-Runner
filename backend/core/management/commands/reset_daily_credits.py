@@ -12,7 +12,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--credits',
             type=int,
-            default=getattr(settings, 'DAILY_CREDITS', 10),
+            default=getattr(settings, 'DAILY_CREDITS'),
             help='Numero di crediti da assegnare (default: settings.DAILY_CREDITS)'
         )
 
