@@ -3,7 +3,7 @@
 # =============================================================================
 # RUNTIME SAFETY OPTIONS
 # =============================================================================
-set -euo pipefail
+set -euo pipefail #exit on error, undefined variables, pipefail
 
 # =============================================================================
 # LOGGING (colors and helpers)
@@ -11,6 +11,7 @@ set -euo pipefail
 NC='\033[0m'; BOLD='\033[1m'; BLUE='\033[34m'; CYAN='\033[36m'; GREEN='\033[32m'
 YELLOW='\033[33m'; RED='\033[31m'; MAGENTA='\033[35m'; GRAY='\033[90m'
 
+# Log functions
 log_section() { echo;echo -e "${MAGENTA}${BOLD}== $* ==${NC}"; }
 log_info()    { echo -e "${BLUE}[INFO]${NC} $*"; }
 log_ready()   { echo -e "${GREEN}[READY]${NC} $*"; }
@@ -29,7 +30,9 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 # PYTHON VIRTUAL ENVIRONMENT
 # =============================================================================
 log_section CONFIGURAZIONE
-VENV_ACTIVATED=0
+VENV_ACTIVATED=0 #0: no venv, 1: venv found
+
+# Check if a venv is activated
 check_venv() {
     for _venv_dir in "$BACKEND_DIR/.venv" "$ROOT_DIR/.venv" "$BACKEND_DIR/venv" "$ROOT_DIR/venv"; do
         if [ -f "${_venv_dir}/bin/activate" ]; then
@@ -39,6 +42,7 @@ check_venv() {
     return 1
 }
 
+# Activate the venv
 for _venv_dir in "$BACKEND_DIR/.venv" "$ROOT_DIR/.venv" "$BACKEND_DIR/venv" "$ROOT_DIR/venv"; do
     if [ -f "${_venv_dir}/bin/activate" ]; then
         log_info "Attivazione ambiente virtuale Python '${_venv_dir}'"
@@ -55,6 +59,7 @@ for _venv_dir in "$BACKEND_DIR/.venv" "$ROOT_DIR/.venv" "$BACKEND_DIR/venv" "$RO
     fi
 done
 
+# Install dependencies
 if check_venv; then
     log_info "Installazione dipendenze backend da '$BACKEND_DIR/requirements.txt'"
     if nohup pip install -r "$BACKEND_DIR/requirements.txt" >/dev/null 2>&1 < /dev/null; then
@@ -104,7 +109,7 @@ log_info "Configuro il reset giornaliero dei crediti alle 00:00"
 CRON_TAG="# GPU-Code-Runner:reset_daily_credits"
 CRON_LINE="0 0 * * * cd \"$BACKEND_DIR\" && \"$PY_BIN\" manage.py reset_daily_credits > /dev/null 2>> /tmp/reset_daily_credits.err.log ${CRON_TAG}"
 
-# Read existing crontab
+# Add or update the cron job
 _existing_cron=$(crontab -l 2>/dev/null || true)
 if echo "$_existing_cron" | grep -F "${CRON_TAG}" >/dev/null 2>&1; then
     {
@@ -123,6 +128,8 @@ fi
 # =============================================================================
 # PRE-CLEANUP PORTS
 # =============================================================================
+
+# Kill processes running on a port
 kill_port() {
     local port="$1"
     log_debug "Terminazione di eventuali processi su :${port}..."
@@ -159,11 +166,14 @@ fi
 # =============================================================================
 log_section BACKEND
 log_info "Avvio backend su :8000 (uvicorn)"
+
+# Start the backend
 pushd "$BACKEND_DIR" >/dev/null
 "${UVICORN_CMD[@]}" backend.asgi:application --host 0.0.0.0 --port 8000 --reload &
 BACK_PID=$!
 popd >/dev/null
 
+# Wait for the backend to be ready
 wait_for_port() {
     local host="$1"; local port="$2"; local timeout="${3:-60}"; local start
     start=$(date +%s)
@@ -171,7 +181,6 @@ wait_for_port() {
         if command -v nc >/dev/null 2>&1; then
             nc -z -w1 "$host" "$port" >/dev/null 2>&1 && return 0
         else
-            # Use a nested bash to avoid set -e effects and silence errors completely
             bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1 && return 0
         fi
         sleep 0.5
@@ -179,8 +188,9 @@ wait_for_port() {
     done
 }
 
+# Wait for the backend to be ready
 if wait_for_port 127.0.0.1 8000 10; then
-    log_ready "Backend in ascolto su :8000"
+    log_ready "Backend in esecuzione su :8000"
 else
     log_error "Backend non raggiungibile su :8000 dopo 10s"
 fi
@@ -190,11 +200,19 @@ fi
 # =============================================================================
 log_section FRONTEND
 log_info "Avvio frontend su :3000"
+
+# Start the frontend
 pushd "$FRONTEND_DIR" >/dev/null
 nohup npm start >/tmp/frontend.log 2>&1 </dev/null &
 FRONT_PID=$!
 popd >/dev/null
-log_ready "Frontend in esecuzione in background (pid=$FRONT_PID), log in /tmp/frontend.log"
+
+# Wait for the frontend to be ready
+if wait_for_port 127.0.0.1 3000 10; then
+    log_ready "Frontend in esecuzione su :3000"
+else
+    log_error "Frontend non raggiungibile su :3000 dopo 10s"
+fi
 
 log_section ESECUZIONE
 
@@ -202,6 +220,8 @@ log_section ESECUZIONE
 # SIGNAL TRAPS
 # =============================================================================
 CLEANED_UP=0
+
+# Cleanup function
 cleanup() {
     log_section CHIUSURA
     if [ "${CLEANED_UP}" = "1" ]; then
@@ -220,13 +240,13 @@ cleanup() {
 	fi
 }
 
+# Exit handler
 on_exit() {
     [ "$VENV_ACTIVATED" = "1" ] && type deactivate >/dev/null 2>&1 && deactivate || true
     cleanup
 }
 
 trap on_exit EXIT
-# Su SIGINT/SIGTERM, uscire per attivare la trap EXIT (ed eseguire cleanup una sola volta)
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
