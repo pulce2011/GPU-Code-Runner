@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
+from decouple import config
 
 
 ### Manager personalizzato per creare utenti con email e matricola invece di username ###
@@ -83,7 +84,7 @@ class Exercise(models.Model):
     params = models.JSONField(default=list, blank=True)
     comment = models.TextField(blank=True) 
     courses = models.ManyToManyField(Course, related_name='exercises')
-    file_extension = models.CharField(max_length=10, default='.c')
+    file_extension = models.CharField(max_length=10, default=config('DEFAULT_FILE_EXTENSION', default=".c"))
     extra_files = models.JSONField(default=list, blank=True)
 
     def __str__(self) -> str:
