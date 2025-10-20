@@ -12,8 +12,10 @@ sleep 1
 echo "> [INFO] Total args: $#"
 
 sleep 1
-echo "> [STDOUT] finishing at $(date +%H:%M:%S)"
-echo "> [STDERR] finishing at $(date +%H:%M:%S)" >&2
+
+echo "> [INFO] Running test..."
+
+bash gpu/sum/run.sh $1
 
 # Genera un numero casuale per determinare se il task è riuscito o fallito
 exit $((RANDOM % 2))
