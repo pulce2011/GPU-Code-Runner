@@ -32,32 +32,58 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 log_section CONFIGURAZIONE
 VENV_ACTIVATED=0 #0: no venv, 1: venv found
 
-# Check if a venv is activated
+# Check if a venv is available; set VENV_DIR when found
 check_venv() {
     for _venv_dir in "$BACKEND_DIR/.venv" "$ROOT_DIR/.venv" "$BACKEND_DIR/venv" "$ROOT_DIR/venv"; do
         if [ -f "${_venv_dir}/bin/activate" ]; then
+            VENV_DIR="${_venv_dir}"
             return 0
         fi
     done
     return 1
 }
 
-# Activate the venv
-for _venv_dir in "$BACKEND_DIR/.venv" "$ROOT_DIR/.venv" "$BACKEND_DIR/venv" "$ROOT_DIR/venv"; do
-    if [ -f "${_venv_dir}/bin/activate" ]; then
-        log_info "Attivazione ambiente virtuale Python '${_venv_dir}'"
-        source "${_venv_dir}/bin/activate"
-        VENV_ACTIVATED=1
-        if command -v python >/dev/null 2>&1; then
-            PY_VER=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:3])))' 2>/dev/null || echo "?")
-            PY_BIN=$(command -v python || echo "python")
-            log_ready "Ambiente virtuale Python attivo (versione=${PY_VER})"
-        else
-            log_warn "Python non trovato dopo l'attivazione del venv"
-        fi
-        break
+
+
+
+# Create venv if not exists
+if ! check_venv; then
+    target_venv_dir="$BACKEND_DIR/venv"
+    log_warn "Nessun ambiente virtuale trovato. Creo un venv in '${target_venv_dir}'"
+    py_sys=""
+    if command -v python3 >/dev/null 2>&1; then
+        py_sys=$(command -v python3)
+    elif command -v python >/dev/null 2>&1; then
+        py_sys=$(command -v python)
+    else
+        log_error "Python non trovato nel sistema: impossibile creare il venv"
+        exit 1
     fi
-done
+    if "$py_sys" -m venv "$target_venv_dir" >/dev/null 2>&1; then
+        log_ready "Creato ambiente virtuale in '${target_venv_dir}'"
+        VENV_DIR="$target_venv_dir"
+    else
+        log_error "Creazione del venv fallita in '${target_venv_dir}'"
+        exit 1
+    fi
+fi
+
+# Activate the venv
+if check_venv; then
+    log_info "Attivazione ambiente virtuale Python '${VENV_DIR}'"
+    source "${VENV_DIR}/bin/activate"
+    VENV_ACTIVATED=1
+    if command -v python >/dev/null 2>&1; then
+        PY_VER=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:3])))' 2>/dev/null || echo "?")
+        PY_BIN=$(command -v python || echo "python")
+        log_ready "Ambiente virtuale Python attivo (versione=${PY_VER})"
+    else
+        log_warn "Python non trovato dopo l'attivazione del venv"
+    fi
+else
+    log_error "Nessun ambiente virtuale Python trovato"
+    exit 1
+fi
 
 # Install dependencies
 if check_venv; then
