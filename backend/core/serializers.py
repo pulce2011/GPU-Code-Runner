@@ -8,7 +8,7 @@ class ExerciseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Exercise
-        fields = ['id', 'name', 'return_type', 'params', 'comment', 'signature', 'file_extension', 'extra_files']
+        fields = ['id', 'name', 'return_type', 'params', 'comment', 'signature', 'file_extension', 'extra_files', 'include_files']
 
     def get_signature(self, obj) -> str:
         return obj.build_signature()

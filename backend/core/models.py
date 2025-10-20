@@ -86,6 +86,7 @@ class Exercise(models.Model):
     courses = models.ManyToManyField(Course, related_name='exercises')
     file_extension = models.CharField(max_length=10, default=config('DEFAULT_FILE_EXTENSION', default=".c"))
     extra_files = models.JSONField(default=list, blank=True)
+    include_files = models.JSONField(default=list, blank=True)
 
     def __str__(self) -> str:
         return self.name
@@ -93,13 +94,17 @@ class Exercise(models.Model):
     # Costruisce la firma della funzione con commenti e parametri
     def build_signature(self) -> str:
         comment_block = f"/*\n{self.comment}\n*/" if self.comment else ""
+        include_lines = "\n".join([f"#include <{inc}>" for inc in (self.include_files or [])])
         param_list = ', '.join([f"{p['type']} {p['name']}" for p in self.params])
         signature_line = f"{self.return_type} {self.name}({param_list})"
-        
+
+        parts = []
         if comment_block:
-            return f"{comment_block}\n\n{signature_line} {'{'}\n\n{'}'}\n"
-        else:
-            return signature_line
+            parts.append(comment_block)
+        if include_lines:
+            parts.append(include_lines)
+        parts.append(f"{signature_line} {'{'}\n\n{'}'}\n")
+        return "\n\n".join(parts)
 
 
 ### Modello per rappresentare un task (Richiesta di esecuzione di un esercizio) ###  

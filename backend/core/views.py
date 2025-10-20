@@ -171,7 +171,18 @@ class RunExerciseView(views.APIView):
     
     # Crea un file temporaneo con il codice
     def _create_temp_file(self, code: str, exercise: Exercise) -> str:
-        with tempfile.NamedTemporaryFile(mode='w', suffix=exercise.file_extension, delete=False, dir=".") as f:
+        # Directory: ./gpu/<exercise.name>
+        safe_name = ''.join(ch for ch in exercise.name if ch.isalnum() or ch in ('-', '_')) or 'exercise'
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'gpu', safe_name))
+        os.makedirs(base_dir, exist_ok=True)
+
+        with tempfile.NamedTemporaryFile(
+            mode='w',
+            suffix=exercise.file_extension,
+            prefix='code_',
+            delete=False,
+            dir=base_dir
+        ) as f:
             f.write(code)
             return f.name
     
