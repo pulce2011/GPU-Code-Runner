@@ -12,7 +12,7 @@ NC='\033[0m'; BOLD='\033[1m'; BLUE='\033[34m'; CYAN='\033[36m'; GREEN='\033[32m'
 YELLOW='\033[33m'; RED='\033[31m'; MAGENTA='\033[35m'; GRAY='\033[90m'
 
 # Log functions
-log_section() { echo;echo -e "${MAGENTA}${BOLD}== $* ==${NC}"; }
+log_section() { echo; echo -e "${MAGENTA}${BOLD}== $* ==${NC}"; }
 log_info()    { echo -e "${BLUE}[INFO]${NC} $*"; }
 log_ready()   { echo -e "${GREEN}[READY]${NC} $*"; }
 log_warn()    { echo -e "${YELLOW}[WARN]${NC} $*"; }
@@ -42,9 +42,6 @@ check_venv() {
     done
     return 1
 }
-
-
-
 
 # Create venv if not exists
 if ! check_venv; then
@@ -85,7 +82,12 @@ else
     exit 1
 fi
 
-# Install dependencies
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+log_section DIPENDENZE
+
+# Backend
 if check_venv; then
     log_info "Installazione dipendenze backend da '$BACKEND_DIR/requirements.txt'"
     if nohup pip install -r "$BACKEND_DIR/requirements.txt" >/dev/null 2>&1 < /dev/null; then
@@ -97,6 +99,22 @@ if check_venv; then
 else
     log_error "Nessun ambiente virtuale Python trovato"
     exit 1
+fi
+
+# Frontend
+if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+    log_info "Installazione dipendenze frontend da '$FRONTEND_DIR/package.json'"
+    pushd "$FRONTEND_DIR" >/dev/null
+    if nohup npm install >/dev/null 2>&1 < /dev/null; then
+        log_ready "Dipendenze frontend installate (npm install)"
+    else
+        log_error "Installazione dipendenze frontend fallita (npm install)"
+        popd >/dev/null
+        exit 1
+    fi
+    popd >/dev/null
+else
+    log_warn "Node.js o npm non trovato: salto installazione dipendenze frontend"
 fi
 
 # =============================================================================
@@ -229,6 +247,8 @@ log_info "Avvio frontend su :3000"
 
 # Start the frontend
 pushd "$FRONTEND_DIR" >/dev/null
+REACT_APP_API_URL=${REACT_APP_API_URL:-http://127.0.0.1:8000/api} \
+REACT_APP_WS_BASE=${REACT_APP_WS_BASE:-ws://127.0.0.1:8000} \
 nohup npm start >/tmp/frontend.log 2>&1 </dev/null &
 FRONT_PID=$!
 popd >/dev/null
