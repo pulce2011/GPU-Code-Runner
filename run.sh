@@ -34,7 +34,7 @@ VENV_ACTIVATED=0 #0: no venv, 1: venv found
 
 # Check if a venv is available; set VENV_DIR when found
 check_venv() {
-    for _venv_dir in "$BACKEND_DIR/.venv" "$ROOT_DIR/.venv" "$BACKEND_DIR/venv" "$ROOT_DIR/venv"; do
+    for _venv_dir in "$BACKEND_DIR/venv"; do
         if [ -f "${_venv_dir}/bin/activate" ]; then
             VENV_DIR="${_venv_dir}"
             return 0
@@ -87,13 +87,21 @@ fi
 # =============================================================================
 log_section DIPENDENZE
 
+# NVCC
+log_info "Controllo se CUDA-Toolkit è installato"
+if command -v nvcc >/dev/null 2>&1; then
+    log_ready "NVCC installato (versione=$(nvcc --version | grep "release" | awk '{print $6}' | sed 's/,//'))"
+else
+    log_error "Installazione NVCC (CUDA Toolkit)..."
+fi
+
 # Backend
 if check_venv; then
     log_info "Installazione dipendenze backend da '$BACKEND_DIR/requirements.txt'"
     if nohup pip install -r "$BACKEND_DIR/requirements.txt" >/dev/null 2>&1 < /dev/null; then
-        log_ready "Dipendenze installate correttamente"
+        log_ready "Dipendenze backend installate correttamente"
     else
-        log_error "Installazione dipendenze fallita"
+        log_error "Installazione dipendenze backend fallita"
         exit 1
     fi
 else
@@ -106,9 +114,9 @@ if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
     log_info "Installazione dipendenze frontend da '$FRONTEND_DIR/package.json'"
     pushd "$FRONTEND_DIR" >/dev/null
     if nohup npm install >/dev/null 2>&1 < /dev/null; then
-        log_ready "Dipendenze frontend installate (npm install)"
+        log_ready "Dipendenze frontend installate correttamente"
     else
-        log_error "Installazione dipendenze frontend fallita (npm install)"
+        log_error "Installazione dipendenze frontend fallita"
         popd >/dev/null
         exit 1
     fi
@@ -116,6 +124,7 @@ if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
 else
     log_warn "Node.js o npm non trovato: salto installazione dipendenze frontend"
 fi
+
 
 # =============================================================================
 # PATHS
@@ -125,6 +134,27 @@ log_info "ROOT_DIR = '$ROOT_DIR'"
 log_info "BACKEND_DIR = '$BACKEND_DIR'"
 log_info "FRONTEND_DIR = '$FRONTEND_DIR'"
 log_info "VENV_ACTIVATED= '$(check_venv && echo "yes" || echo "no")'"
+
+# =============================================================================
+# .ENV
+# =============================================================================
+log_section "VARIABILI '.env'"
+
+ENV_FILE="$BACKEND_DIR/.env"
+
+if [ -f "$ENV_FILE" ]; then
+    # Carica solo le variabili di interesse
+    export $(grep -E "^(INFO_DEBUG|DAILY_CREDITS_UPDATE|DEFAULT_FILE_EXTENSION)=" "$ENV_FILE" | xargs)
+else
+    log_error "File $ENV_FILE non trovato"
+fi
+
+# Log dei valori caricati
+log_info "DAILY_CREDITS_UPDATE = $DAILY_CREDITS_UPDATE"
+log_info "DEFAULT_FILE_EXTENSION = '$DEFAULT_FILE_EXTENSION'"
+log_info "INFO_DEBUG = $INFO_DEBUG"
+
+
 
 # =============================================================================
 # USER CONFIRMATION
