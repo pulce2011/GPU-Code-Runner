@@ -212,9 +212,9 @@ class RunExerciseView(views.APIView):
         script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'run_exercise.sh'))
         
         if shutil.which('stdbuf'):
-            cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path]
+            cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path, exercise.name]
         else:
-            cmd = ['bash', script_path, tmp_path]
+            cmd = ['bash', script_path, tmp_path, exercise.name]
 
         return subprocess.Popen(
             cmd,

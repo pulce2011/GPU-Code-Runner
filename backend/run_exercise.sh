@@ -1,19 +1,20 @@
 #!/bin/bash
-# simulate_gpu.sh
+# run_exercise.sh
 # $1 = percorso file codice da eseguire (temporaneo)
+# $2 = nome dell'esercizio
 
 # Carica solo variabili specifiche da .env
 if [ -f ".env" ]; then
-    if grep -q "^INFO_DEBUG=" .env; then
-        export $(grep "^INFO_DEBUG=" .env | xargs)
+    if grep -q "^SCRIPT_DEBUG=" .env; then
+        export $(grep "^SCRIPT_DEBUG=" .env | xargs)
     fi
 else
     echo "> [ERROR] File .env non trovato"
-    INFO_DEBUG=false
+    SCRIPT_DEBUG=false
 fi
 
-if [ "$INFO_DEBUG" = "true" ]; then
-    echo "> === INFO DEBUG ==="
+if [ "$SCRIPT_DEBUG" = "true" ]; then
+    echo "> === SCRIPT DEBUG ==="
     echo "> Script args:"
     c=1
     for arg in "$@"; do
@@ -27,7 +28,7 @@ if [ "$INFO_DEBUG" = "true" ]; then
 
 fi
 
-bash gpu/sum/run.sh $1
+EXERCISE_NAME="${2}"
 
-# Genera un numero casuale per determinare se il task è riuscito o fallito
-exit $((RANDOM % 2))
+bash "gpu/${EXERCISE_NAME}/run.sh" "$1"
+exit $?
