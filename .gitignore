@@ -3,6 +3,7 @@ venv/
 env/
 ENV/
 .envrc
+.env.backup
 
 # Python
 __pycache__/

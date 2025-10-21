@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from decouple import config, Csv
+from datetime import timedelta
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -119,7 +120,6 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', cast=Csv(), default='http://localhost:5173,http://localhost:3000')
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -149,5 +149,54 @@ CHANNEL_LAYERS = {
     }
 }
 
-# Daily credits default
-DAILY_CREDITS = config('DAILY_CREDITS_UPDATE', cast=int, default=10)
+# =============================================================================
+# CREDIT SYSTEM CONFIGURATION
+# =============================================================================
+USER_INITIAL_CREDITS = config('USER_INITIAL_CREDITS', cast=int, default=100)
+DAILY_CREDITS_RESET_AMOUNT = config('DAILY_CREDITS_RESET_AMOUNT', cast=int, default=10)
+TASK_START_COST = config('TASK_START_COST', cast=int, default=1)
+DEFAULT_CREDIT_COST_PER_SECOND = config('DEFAULT_CREDIT_COST_PER_SECOND', cast=int, default=1)
+
+# =============================================================================
+# CODE EXECUTION & COMPILATION
+# =============================================================================
+DEFAULT_FILE_EXTENSION = config('DEFAULT_FILE_EXTENSION', default='.cu')
+MAX_TASK_EXECUTION_TIME = config('MAX_TASK_EXECUTION_TIME', cast=int, default=30)
+MAX_SOURCE_CODE_LENGTH = config('MAX_SOURCE_CODE_LENGTH', cast=int, default=10000)
+MAX_OUTPUT_BUFFER_SIZE = config('MAX_OUTPUT_BUFFER_SIZE', cast=int, default=50000)
+CODE_COMPILATION_TIMEOUT = config('CODE_COMPILATION_TIMEOUT', cast=int, default=10)
+PROGRAM_EXECUTION_TIMEOUT = config('PROGRAM_EXECUTION_TIMEOUT', cast=int, default=20)
+
+# =============================================================================
+# AUTHENTICATION & SECURITY
+# =============================================================================
+# JWT Configuration
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', cast=int, default=60)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', cast=int, default=1440)),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+    'JTI_CLAIM': 'jti',
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', cast=int, default=60)),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', cast=int, default=1440)),
+}
+
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', cast=Csv(), default='http://localhost:3000,http://localhost:5173')

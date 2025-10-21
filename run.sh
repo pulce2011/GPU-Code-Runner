@@ -13,6 +13,7 @@ YELLOW='\033[33m'; RED='\033[31m'; MAGENTA='\033[35m'; GRAY='\033[90m'
 
 # Log functions
 log_section() { echo; echo -e "${MAGENTA}${BOLD}== $* ==${NC}"; }
+log_subsection() { echo -e "${RED}$*${NC}"; }
 log_info()    { echo -e "${BLUE}[INFO]${NC} $*"; }
 log_ready()   { echo -e "${GREEN}[READY]${NC} $*"; }
 log_warn()    { echo -e "${YELLOW}[WARN]${NC} $*"; }
@@ -143,18 +144,36 @@ log_section "VARIABILI '.env'"
 ENV_FILE="$BACKEND_DIR/.env"
 
 if [ -f "$ENV_FILE" ]; then
-    # Carica solo le variabili di interesse
-    export $(grep -E "^(INFO_DEBUG|DAILY_CREDITS_UPDATE|DEFAULT_FILE_EXTENSION)=" "$ENV_FILE" | xargs)
+    # Carica tutte le variabili di configurazione
+    export $(grep -E "^(SECRET_KEY|DEBUG|ALLOWED_HOSTS|CORS_ALLOWED_ORIGINS|USER_INITIAL_CREDITS|DAILY_CREDITS_RESET_AMOUNT|TASK_START_COST|DEFAULT_CREDIT_COST_PER_SECOND|DEFAULT_FILE_EXTENSION|MAX_TASK_EXECUTION_TIME|MAX_SOURCE_CODE_LENGTH|MAX_OUTPUT_BUFFER_SIZE|CODE_COMPILATION_TIMEOUT|PROGRAM_EXECUTION_TIMEOUT|JWT_ACCESS_TOKEN_LIFETIME|JWT_REFRESH_TOKEN_LIFETIME|CSRF_TRUSTED_ORIGINS)=" "$ENV_FILE" | xargs)
 else
     log_error "File $ENV_FILE non trovato"
 fi
 
 # Log dei valori caricati
-log_info "DAILY_CREDITS_UPDATE = $DAILY_CREDITS_UPDATE"
-log_info "DEFAULT_FILE_EXTENSION = '$DEFAULT_FILE_EXTENSION'"
-log_info "INFO_DEBUG = $INFO_DEBUG"
+log_subsection "DJANGO CORE SETTINGS"
+log_info "DEBUG = ${DEBUG:-'not set'}"
+log_info "ALLOWED_HOSTS = ${ALLOWED_HOSTS:-'not set'}"
+log_info "CORS_ALLOWED_ORIGINS = ${CORS_ALLOWED_ORIGINS:-'not set'}"
 
+log_subsection "CREDIT SYSTEM CONFIGURATION"
+log_info "USER_INITIAL_CREDITS = ${USER_INITIAL_CREDITS:-'not set'}"
+log_info "DAILY_CREDITS_RESET_AMOUNT = ${DAILY_CREDITS_RESET_AMOUNT:-'not set'}"
+log_info "TASK_START_COST = ${TASK_START_COST:-'not set'}"
+log_info "DEFAULT_CREDIT_COST_PER_SECOND = ${DEFAULT_CREDIT_COST_PER_SECOND:-'not set'}"
 
+log_subsection "CODE EXECUTION & COMPILATION"
+log_info "DEFAULT_FILE_EXTENSION = '${DEFAULT_FILE_EXTENSION:-'not set'}'"
+log_info "MAX_TASK_EXECUTION_TIME = ${MAX_TASK_EXECUTION_TIME:-'not set'}"
+log_info "MAX_SOURCE_CODE_LENGTH = ${MAX_SOURCE_CODE_LENGTH:-'not set'}"
+log_info "MAX_OUTPUT_BUFFER_SIZE = ${MAX_OUTPUT_BUFFER_SIZE:-'not set'}"
+log_info "CODE_COMPILATION_TIMEOUT = ${CODE_COMPILATION_TIMEOUT:-'not set'}"
+log_info "PROGRAM_EXECUTION_TIMEOUT = ${PROGRAM_EXECUTION_TIMEOUT:-'not set'}"
+
+log_subsection "AUTHENTICATION & SECURITY"
+log_info "JWT_ACCESS_TOKEN_LIFETIME = ${JWT_ACCESS_TOKEN_LIFETIME:-'not set'}"
+log_info "JWT_REFRESH_TOKEN_LIFETIME = ${JWT_REFRESH_TOKEN_LIFETIME:-'not set'}"
+log_info "CSRF_TRUSTED_ORIGINS = ${CSRF_TRUSTED_ORIGINS:-'not set'}"
 
 # =============================================================================
 # USER CONFIRMATION
@@ -181,7 +200,7 @@ log_section CRON
 log_info "Configuro il reset giornaliero dei crediti alle 00:00"
 
 CRON_TAG="# GPU-Code-Runner:reset_daily_credits"
-CRON_LINE="0 0 * * * cd \"$BACKEND_DIR\" && \"$PY_BIN\" manage.py reset_daily_credits > /dev/null 2>> /tmp/reset_daily_credits.err.log ${CRON_TAG}"
+CRON_LINE="0 0 * * * cd \"$BACKEND_DIR\" && \"$PY_BIN\" manage.py reset_daily_credits --credits=${DAILY_CREDITS_RESET_AMOUNT:-10} > /dev/null 2>> /tmp/reset_daily_credits.err.log ${CRON_TAG}"
 
 # Add or update the cron job
 _existing_cron=$(crontab -l 2>/dev/null || true)

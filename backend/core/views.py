@@ -6,6 +6,7 @@ import time
 import os
 import select
 from typing import Dict, Any, Optional
+from django.conf import settings
 from rest_framework import generics, permissions, status, views
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -88,15 +89,16 @@ class RunExerciseView(views.APIView):
         user = request.user
 
         # Controllo crediti
-        if not user.has_credits():
+        task_start_cost = settings.TASK_START_COST
+        if not user.has_credits(task_start_cost):
             return self._error_response('Crediti insufficienti.', status.HTTP_402_PAYMENT_REQUIRED)
 
         # Recupero esercizio
         try:
             exercise = Exercise.objects.get(id=exercise_id)
             
-            # Deduce 1 credito per avviare il task
-            if not user.reduce_credits(1):
+            # Deduce crediti per avviare il task
+            if not user.reduce_credits(task_start_cost):
                 return self._error_response('Crediti insufficienti.', status.HTTP_402_PAYMENT_REQUIRED)
             
             # Crea il task e lo avvia in background
@@ -123,6 +125,14 @@ class RunExerciseView(views.APIView):
         if not request.data.get('exercise_id'):
             return self._error_response('exercise_id is required', status.HTTP_400_BAD_REQUEST)
         
+        # Controllo lunghezza massima del codice sorgente
+        code = request.data.get('code', '')
+        if len(code) > settings.MAX_SOURCE_CODE_LENGTH:
+            return self._error_response(
+                f'Codice troppo lungo. Massimo {settings.MAX_SOURCE_CODE_LENGTH} caratteri, forniti {len(code)}', 
+                status.HTTP_400_BAD_REQUEST
+            )
+        
         return None
     
     # Crea una risposta di errore standardizzata
@@ -135,7 +145,7 @@ class RunExerciseView(views.APIView):
             user=user,
             exercise=exercise,
             code=code,
-            credits_cost=1,
+            credits_cost=settings.TASK_START_COST,
         )
         task.pending()
         return task
@@ -224,6 +234,23 @@ class RunExerciseView(views.APIView):
             # Se c'è nuovo output, aggiorna il task e invia un broadcast per lo streaming realtime
             if (len(accumulated_stdout) > last_broadcast_stdout_len) or (len(accumulated_stderr) > last_broadcast_stderr_len):
                 try:
+                    # Controllo dimensione massima output
+                    if len(accumulated_stdout) > settings.MAX_OUTPUT_BUFFER_SIZE or len(accumulated_stderr) > settings.MAX_OUTPUT_BUFFER_SIZE:
+                        # Tronca l'output se supera la dimensione massima
+                        if len(accumulated_stdout) > settings.MAX_OUTPUT_BUFFER_SIZE:
+                            accumulated_stdout = accumulated_stdout[:settings.MAX_OUTPUT_BUFFER_SIZE] + "\n... [Output troncato per dimensione massima]"
+                        if len(accumulated_stderr) > settings.MAX_OUTPUT_BUFFER_SIZE:
+                            accumulated_stderr = accumulated_stderr[:settings.MAX_OUTPUT_BUFFER_SIZE] + "\n... [Output troncato per dimensione massima]"
+                        # Termina il processo se l'output è troppo grande
+                        self._terminate_process(process)
+                        task.fail(
+                            stdout=accumulated_stdout.strip(), 
+                            stderr=f"{accumulated_stderr.strip()}Task terminato per output troppo grande (max {settings.MAX_OUTPUT_BUFFER_SIZE} caratteri)"
+                        )
+                        self._ws_broadcast(task)
+                        task_interrupted = True
+                        break
+                    
                     task.stdout = accumulated_stdout
                     task.stderr = accumulated_stderr
                     # Non cambiamo lo status qui: resta 'running'
@@ -237,9 +264,23 @@ class RunExerciseView(views.APIView):
             
             # Controllo crediti ogni secondo (senza sleep bloccante)
             current_time = time.time()
+            # Controllo timeout massimo di esecuzione
+            elapsed_seconds = current_time - start_time
+            if elapsed_seconds >= settings.MAX_TASK_EXECUTION_TIME:
+                self._terminate_process(process)
+                accumulated_stdout, accumulated_stderr = self._get_remaining_output(
+                    process, accumulated_stdout, accumulated_stderr
+                )
+                task.fail(
+                    stdout=accumulated_stdout.strip(), 
+                    stderr=f"{accumulated_stderr.strip()}Task terminato per timeout massimo ({settings.MAX_TASK_EXECUTION_TIME}s)"
+                )
+                self._ws_broadcast(task)
+                task_interrupted = True
+                break
+            
             if current_time - last_credit_check >= 1.0:
                 task.user.refresh_from_db()
-                elapsed_seconds = current_time - start_time
                 task_interrupted = self._handle_credits_deduction(task, elapsed_seconds, process)
                 if task_interrupted:
                     accumulated_stdout, accumulated_stderr = self._get_remaining_output(
@@ -289,7 +330,7 @@ class RunExerciseView(views.APIView):
     
     # Gestisce la deduzione dei crediti e l'interruzione se necessario
     def _handle_credits_deduction(self, task: Task, elapsed_seconds: float, process: subprocess.Popen) -> bool:
-        credits_needed = int(elapsed_seconds)
+        credits_needed = int(elapsed_seconds * settings.DEFAULT_CREDIT_COST_PER_SECOND)
         
         if task.user.credits >= credits_needed - task.credits_cost:
             credits_to_deduct = credits_needed - task.credits_cost
@@ -307,14 +348,14 @@ class RunExerciseView(views.APIView):
     def _terminate_process(self, process: subprocess.Popen) -> None:
         process.terminate()
         try:
-            process.wait(timeout=0.5)
+            process.wait(timeout=min(0.5, settings.PROGRAM_EXECUTION_TIMEOUT))
         except subprocess.TimeoutExpired:
             process.kill()
     
     # Ottiene l'output rimanente dal processo terminato
     def _get_remaining_output(self, process: subprocess.Popen, stdout: str, stderr: str) -> tuple:
         try:
-            remaining_stdout, remaining_stderr = process.communicate(timeout=0.5)
+            remaining_stdout, remaining_stderr = process.communicate(timeout=min(0.5, settings.PROGRAM_EXECUTION_TIMEOUT))
             stdout += remaining_stdout
             stderr += remaining_stderr
         except subprocess.TimeoutExpired:
@@ -331,7 +372,7 @@ class RunExerciseView(views.APIView):
         
         # Calcolo tempo di esecuzione e crediti utilizzati
         total_seconds = time.time() - output_data['start_time']
-        total_credits_used = int(total_seconds)
+        total_credits_used = int(total_seconds * settings.DEFAULT_CREDIT_COST_PER_SECOND)
         
         # Deduzione crediti se necessario
         if total_credits_used > task.credits_cost:

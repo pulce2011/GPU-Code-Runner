@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
+from django.conf import settings
 from decouple import config
 
 
@@ -18,6 +19,7 @@ class UserManager(BaseUserManager):
             matr=matr,
             first_name=first_name,
             last_name=last_name,
+            credits=settings.USER_INITIAL_CREDITS,
             **extra_fields
         )
         user.set_password(password)
@@ -27,6 +29,7 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, matr, first_name, last_name, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('credits', settings.USER_INITIAL_CREDITS)
         
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -50,7 +53,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     matr = models.CharField(max_length=20, unique=True)
     course = models.ForeignKey(Course, null=True, blank=True, on_delete=models.SET_NULL)
-    credits = models.IntegerField(default=100)
+    credits = models.IntegerField()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['matr', 'first_name', 'last_name']
@@ -84,7 +87,7 @@ class Exercise(models.Model):
     params = models.JSONField(default=list, blank=True)
     comment = models.TextField(blank=True) 
     courses = models.ManyToManyField(Course, related_name='exercises')
-    file_extension = models.CharField(max_length=10, default=config('DEFAULT_FILE_EXTENSION', default=".c"))
+    file_extension = models.CharField(max_length=10, default=settings.DEFAULT_FILE_EXTENSION)
     include_files = models.JSONField(default=list, blank=True)
 
     def __str__(self) -> str:

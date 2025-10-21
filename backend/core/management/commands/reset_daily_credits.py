@@ -12,8 +12,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--credits',
             type=int,
-            default=getattr(settings, 'DAILY_CREDITS'),
-            help='Numero di crediti da assegnare (default: settings.DAILY_CREDITS)'
+            default=settings.DAILY_CREDITS_RESET_AMOUNT,
+            help='Numero di crediti da assegnare (default: settings.DAILY_CREDITS_RESET_AMOUNT)'
         )
 
     def handle(self, *args, **options):
