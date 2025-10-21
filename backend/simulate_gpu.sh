@@ -4,7 +4,6 @@
 
 # Carica solo variabili specifiche da .env
 if [ -f ".env" ]; then
-    # Carica solo <INFO_DEBUG>
     if grep -q "^INFO_DEBUG=" .env; then
         export $(grep "^INFO_DEBUG=" .env | xargs)
     fi

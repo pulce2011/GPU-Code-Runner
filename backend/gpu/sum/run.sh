@@ -1,7 +1,6 @@
-echo "> [INFO] Running exercise..."
-echo "> [SUM] filename: $1"
-
-sleep 1
-
-nvcc main.cu  -o temp_exe #occhio a path che saranno relativi a dove viene lanciato il processo. Il nome dell'eseguibile non deve essere uguale all'eseguibile di altri processi
+#!/usr/bin/env bash
+set -e
+cd gpu/sum
+nvcc main.cu -DTEMP_FILE_PATH="\"$1\"" -o temp_exe
 ./temp_exe
+rm -f temp_exe

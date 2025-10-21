@@ -1,6 +1,7 @@
+#include <stdio.h>
 #include <cuda_runtime.h>
 
-#include "sum.cuh"
+#include TEMP_FILE_PATH
 
 int main() {
     const int n_threads = 1024;
@@ -25,10 +26,11 @@ int main() {
 
     for (int i=0; i<N; i++) {
         if (c_h2[i] != c_h[i]) {
+            printf("> [ERROR] Somma non corretta.");
             return 1;
         }
     }
 
-
+    printf("> [OK] Somma corretta!");
     return 0;
 }
