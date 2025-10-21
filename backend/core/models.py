@@ -85,7 +85,6 @@ class Exercise(models.Model):
     comment = models.TextField(blank=True) 
     courses = models.ManyToManyField(Course, related_name='exercises')
     file_extension = models.CharField(max_length=10, default=config('DEFAULT_FILE_EXTENSION', default=".c"))
-    extra_files = models.JSONField(default=list, blank=True)
     include_files = models.JSONField(default=list, blank=True)
 
     def __str__(self) -> str:
