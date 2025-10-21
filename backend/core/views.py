@@ -175,7 +175,7 @@ class RunExerciseView(views.APIView):
             task.save()
             self._ws_broadcast(task)
 
-            output_data = self._monitor_process(process, task)
+            output_data = self._monitor_process(process, task, tmp_path)
             
             if not output_data['interrupted']:
                 self._finalize_task(task, process, output_data)
@@ -183,8 +183,11 @@ class RunExerciseView(views.APIView):
         except Exception as e:
             task.fail(stdout='', stderr=f'Errore durante l\'esecuzione: {str(e)}')
             self._ws_broadcast(task)
-        finally:
+            # Pulisce il file temporaneo anche in caso di errore
             self._cleanup_temp_file(tmp_path)
+        finally:
+            # Rimuovi la pulizia da qui perché ora è gestita in _finalize_task
+            pass
     
     # Crea un file temporaneo con il codice
     def _create_temp_file(self, code: str, exercise: Exercise) -> str:
@@ -222,7 +225,7 @@ class RunExerciseView(views.APIView):
         )
     
     # Monitora il processo e gestisce i crediti
-    def _monitor_process(self, process: subprocess.Popen, task: Task) -> Dict[str, Any]:
+    def _monitor_process(self, process: subprocess.Popen, task: Task, tmp_path: str = None) -> Dict[str, Any]:
         accumulated_stdout = ""
         accumulated_stderr = ""
         last_broadcast_stdout_len = 0
@@ -256,6 +259,9 @@ class RunExerciseView(views.APIView):
                         self._ws_broadcast(task)
                         task_interrupted = True
                         
+                        # Pulisce il file temporaneo
+                        self._cleanup_temp_file(tmp_path)
+                        
                         # Avvia il prossimo task in coda se disponibile
                         self._start_next_pending_task()
                         break
@@ -287,6 +293,9 @@ class RunExerciseView(views.APIView):
                 self._ws_broadcast(task)
                 task_interrupted = True
                 
+                # Pulisce il file temporaneo
+                self._cleanup_temp_file(tmp_path)
+                
                 # Avvia il prossimo task in coda se disponibile
                 self._start_next_pending_task()
                 break
@@ -304,6 +313,9 @@ class RunExerciseView(views.APIView):
                     )
                     self._ws_broadcast(task)
                     
+                    # Pulisce il file temporaneo
+                    self._cleanup_temp_file(tmp_path)
+                    
                     # Avvia il prossimo task in coda se disponibile
                     self._start_next_pending_task()
                 last_credit_check = current_time
@@ -313,7 +325,8 @@ class RunExerciseView(views.APIView):
             'stdout': accumulated_stdout,
             'stderr': accumulated_stderr,
             'interrupted': task_interrupted,
-            'start_time': start_time
+            'start_time': start_time,
+            'tmp_path': tmp_path
         }
     
     # Legge l'output del processo in modo non bloccante
@@ -401,6 +414,9 @@ class RunExerciseView(views.APIView):
         else:
             task.fail(stdout=final_stdout.strip(), stderr=final_stderr.strip())
         self._ws_broadcast(task)
+        
+        # Pulisce il file temporaneo
+        self._cleanup_temp_file(output_data.get('tmp_path'))
         
         # Avvia il prossimo task in coda se disponibile
         self._start_next_pending_task()
