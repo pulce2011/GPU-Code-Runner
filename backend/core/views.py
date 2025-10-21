@@ -189,22 +189,13 @@ class RunExerciseView(views.APIView):
     
     # Avvia il processo di esecuzione
     def _start_process(self, tmp_path: str, exercise: Exercise) -> subprocess.Popen:
-        extra_args = []
-        try:
-            # Converte l'elenco di file extra in una lista di stringhe
-            extra_args = [str(x) for x in (exercise.extra_files or [])]
-        except Exception as e:
-            print(f"Error converting extra_files to args: {e}")
-            extra_args = []
         
-        # Genera il comando da eseguire
         script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simulate_gpu.sh'))
-        # Forza line-buffering del processo figlio quando possibile (stdbuf)
-        # In assenza di stdbuf, si ricade al semplice 'bash ...'
+        
         if shutil.which('stdbuf'):
-            cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path, *extra_args]
+            cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path]
         else:
-            cmd = ['bash', script_path, tmp_path, *extra_args]
+            cmd = ['bash', script_path, tmp_path]
 
         return subprocess.Popen(
             cmd,
