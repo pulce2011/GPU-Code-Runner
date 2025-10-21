@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
-// Componente editor Monaco per codice C/C++
+// Importa tutte le configurazioni dal file separato
+import {
+  getLanguageFromExtension,
+  getLanguageNameFromExtension,
+  getCompilerFromExtension,
+  getEditorOptions,
+  configureCUDASupport
+} from './config/editorConfig.js';
+
+// Componente editor Monaco semplificato
 function CodeEditor({ exercise, onCodeChange, runButton }) {
   const [code, setCode] = useState('');
+
+  // Determina linguaggio, nome e compilatore basati sull'estensione
+  const fileExtension = exercise?.file_extension || '.c';
+  const language = getLanguageFromExtension(fileExtension);
+  const languageName = getLanguageNameFromExtension(fileExtension);
+  const compiler = getCompilerFromExtension(fileExtension);
+  const editorOptions = getEditorOptions(language);
 
   // Carica template funzione quando cambia esercizio
   useEffect(() => {
@@ -18,17 +34,12 @@ function CodeEditor({ exercise, onCodeChange, runButton }) {
     onCodeChange(value);
   };
 
-  // Configurazione editor Monaco
-  const editorOptions = {
-    fontSize: 14,
-    minimap: { enabled: false },
-    automaticLayout: true,
-    lineNumbers: 'on',
-    wordWrap: 'on',
-    scrollBeyondLastLine: false,
-    padding: { top: 16, bottom: 16 },
-    fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
-    fontLigatures: true,
+  // Configura Monaco quando è pronto
+  const handleEditorDidMount = (editor, monaco) => {
+    // Configura supporto CUDA se necessario
+    if (fileExtension === '.cu' || fileExtension === '.cuh') {
+      configureCUDASupport(monaco);
+    }
   };
 
   return (
@@ -59,12 +70,12 @@ function CodeEditor({ exercise, onCodeChange, runButton }) {
               <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
               </svg>
-              <span className="text-sm font-medium text-gray-700">Editor C/C++</span>
+              <span className="text-sm font-medium text-gray-700">Code Editor</span>
             </div>
             <div className="flex items-center space-x-4 text-xs text-gray-500">
               <span>Monaco Editor</span>
               <span>•</span>
-              <span>Syntax Highlighting</span>
+              <span>Dynamic Syntax Highlighting</span>
             </div>
           </div>
         </div>
@@ -73,9 +84,10 @@ function CodeEditor({ exercise, onCodeChange, runButton }) {
         <div className="bg-white relative">
           <Editor
             height="400px"
-            language="cpp"
+            language={language}
             value={code}
             onChange={handleEditorChange}
+            onMount={handleEditorDidMount}
             theme="vs-light"
             options={editorOptions}
           />
@@ -94,13 +106,13 @@ function CodeEditor({ exercise, onCodeChange, runButton }) {
             <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Linguaggio: C/C++
+            Linguaggio: {languageName}
           </span>
           <span className="flex items-center">
             <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            Compilazione: GCC
+            Compilazione: {compiler}
           </span>
         </div>
         
