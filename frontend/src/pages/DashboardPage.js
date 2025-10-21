@@ -18,6 +18,8 @@ function DashboardPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const statusMessageRef = useRef(null);
+  const stdoutRef = useRef(null);
+  const stderrRef = useRef(null);
 
   // Carica informazioni utente all'avvio
   useEffect(() => {
@@ -47,6 +49,19 @@ function DashboardPage() {
       }, 100);
     }
   }, [taskDetails?.message]);
+
+  // Auto-scroll quando stdout/stderr vengono aggiornati
+  useEffect(() => {
+    if (executionOutput?.stdout && stdoutRef.current) {
+      stdoutRef.current.scrollTop = stdoutRef.current.scrollHeight;
+    }
+  }, [executionOutput?.stdout]);
+
+  useEffect(() => {
+    if (executionOutput?.stderr && stderrRef.current) {
+      stderrRef.current.scrollTop = stderrRef.current.scrollHeight;
+    }
+  }, [executionOutput?.stderr]);
 
   // Tick temporale per aggiornare la durata in tempo reale durante running/pending
   useEffect(() => {
@@ -414,7 +429,7 @@ function DashboardPage() {
                     <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
                     <h4 className="text-sm font-medium text-gray-700">Output</h4>
                   </div>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto" ref={stdoutRef}>
                     <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">{executionOutput.stdout}</pre>
                   </div>
                 </div>
@@ -427,7 +442,7 @@ function DashboardPage() {
                     <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
                     <h4 className="text-sm font-medium text-gray-700">Errori</h4>
                   </div>
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-h-96 overflow-y-auto" ref={stderrRef}>
                     <pre className="text-sm text-red-800 whitespace-pre-wrap font-mono">{executionOutput.stderr}</pre>
                   </div>
                 </div>

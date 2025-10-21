@@ -12,24 +12,20 @@ else
     INFO_DEBUG=false
 fi
 
-sleep 1
-
 if [ "$INFO_DEBUG" = "true" ]; then
     echo "> === INFO DEBUG ==="
     echo "> Script args:"
     c=1
     for arg in "$@"; do
         echo ">     $c. $arg"
-        sleep 1
         c=$((c + 1))
+        sleep 0.1
     done
-    sleep 1
     echo "> Total args: $#"
-    sleep 1
+    sleep 0.1
     echo "> === END DEBUG ==="
-fi
 
-sleep 1
+fi
 
 bash gpu/sum/run.sh $1
 

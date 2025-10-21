@@ -1,4 +1,5 @@
 import tempfile
+import shutil
 import subprocess
 import threading
 import time
@@ -198,7 +199,12 @@ class RunExerciseView(views.APIView):
         
         # Genera il comando da eseguire
         script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simulate_gpu.sh'))
-        cmd = ['bash', script_path, tmp_path, *extra_args]
+        # Forza line-buffering del processo figlio quando possibile (stdbuf)
+        # In assenza di stdbuf, si ricade al semplice 'bash ...'
+        if shutil.which('stdbuf'):
+            cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path, *extra_args]
+        else:
+            cmd = ['bash', script_path, tmp_path, *extra_args]
 
         return subprocess.Popen(
             cmd,
@@ -216,14 +222,14 @@ class RunExerciseView(views.APIView):
         last_broadcast_stderr_len = 0
         start_time = time.time()
         task_interrupted = False
+        last_credit_check = start_time
         
         while process.poll() is None and not task_interrupted:
-            time.sleep(1)
-            task.user.refresh_from_db()
-            
+            # Polling non bloccante per output istantaneo
             accumulated_stdout, accumulated_stderr = self._read_process_output(
                 process, accumulated_stdout, accumulated_stderr
             )
+            
             # Se c'è nuovo output, aggiorna il task e invia un broadcast per lo streaming realtime
             if (len(accumulated_stdout) > last_broadcast_stdout_len) or (len(accumulated_stderr) > last_broadcast_stderr_len):
                 try:
@@ -238,8 +244,11 @@ class RunExerciseView(views.APIView):
                 last_broadcast_stdout_len = len(accumulated_stdout)
                 last_broadcast_stderr_len = len(accumulated_stderr)
             
-            elapsed_seconds = time.time() - start_time
-            if elapsed_seconds >= 1.0:
+            # Controllo crediti ogni secondo (senza sleep bloccante)
+            current_time = time.time()
+            if current_time - last_credit_check >= 1.0:
+                task.user.refresh_from_db()
+                elapsed_seconds = current_time - start_time
                 task_interrupted = self._handle_credits_deduction(task, elapsed_seconds, process)
                 if task_interrupted:
                     accumulated_stdout, accumulated_stderr = self._get_remaining_output(
@@ -250,7 +259,9 @@ class RunExerciseView(views.APIView):
                         stderr=accumulated_stderr.strip()
                     )
                     self._ws_broadcast(task)
-        
+                last_credit_check = current_time
+            
+            time.sleep(0.01)
         return {
             'stdout': accumulated_stdout,
             'stderr': accumulated_stderr,
@@ -261,14 +272,26 @@ class RunExerciseView(views.APIView):
     # Legge l'output del processo in modo non bloccante
     def _read_process_output(self, process: subprocess.Popen, stdout: str, stderr: str) -> tuple:
         try:
-            if select.select([process.stdout], [], [], 0)[0]:
+            # Drena tutte le linee disponibili su stdout
+            while True:
+                rlist, _, _ = select.select([process.stdout], [], [], 0)
+                if not rlist:
+                    break
                 line = process.stdout.readline()
-                if line:
-                    stdout += line
-            if select.select([process.stderr], [], [], 0)[0]:
+                if not line:
+                    break
+                stdout += line
+
+            # Drena tutte le linee disponibili su stderr
+            while True:
+                rlist, _, _ = select.select([process.stderr], [], [], 0)
+                if not rlist:
+                    break
                 line = process.stderr.readline()
-                if line:
-                    stderr += line
+                if not line:
+                    break
+                stderr += line
+
         except Exception:
             pass
         return stdout, stderr
