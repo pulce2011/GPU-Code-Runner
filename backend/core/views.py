@@ -206,7 +206,7 @@ class RunExerciseView(views.APIView):
     # Avvia il processo di esecuzione
     def _start_process(self, tmp_path: str, exercise: Exercise) -> subprocess.Popen:
         
-        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simulate_gpu.sh'))
+        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'run_exercise.sh'))
         
         if shutil.which('stdbuf'):
             cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path]
