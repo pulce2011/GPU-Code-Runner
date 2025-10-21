@@ -181,3 +181,19 @@ class Task(models.Model):
         self.stderr = stderr
         self.message = "Task interrotto (crediti esauriti)."
         self.save()
+    
+    @classmethod
+    def get_running_tasks_count(cls) -> int:
+        """Restituisce il numero di task attualmente in esecuzione"""
+        return cls.objects.filter(status='running').count()
+    
+    @classmethod
+    def get_next_pending_task(cls):
+        """Restituisce il prossimo task in attesa (FIFO)"""
+        return cls.objects.filter(status='pending').order_by('created_at').first()
+    
+    @classmethod
+    def can_start_new_task(cls) -> bool:
+        """Verifica se è possibile avviare un nuovo task"""
+        from django.conf import settings
+        return cls.get_running_tasks_count() < settings.MAX_CONCURRENT_TASKS

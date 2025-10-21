@@ -101,14 +101,20 @@ class RunExerciseView(views.APIView):
             if not user.reduce_credits(task_start_cost):
                 return self._error_response('Crediti insufficienti.', status.HTTP_402_PAYMENT_REQUIRED)
             
-            # Crea il task e lo avvia in background
+            # Crea il task
             task = self._create_task(user, exercise, code)
-            self._start_task_execution(task)
-
+            
+            # Controlla se può essere avviato immediatamente o va in coda
+            if Task.can_start_new_task():
+                self._start_task_execution(task)
+                message = 'Lavoro avviato con successo'
+            else:
+                message = f'Lavoro aggiunto alla coda (posizione: {Task.objects.filter(status="pending").count()})'
+            
             return Response({
                 'task_id': task.id,
                 'status': task.status,
-                'message': 'Lavoro avviato con successo'
+                'message': message
             })
             
         # Gestione errori
@@ -249,6 +255,9 @@ class RunExerciseView(views.APIView):
                         )
                         self._ws_broadcast(task)
                         task_interrupted = True
+                        
+                        # Avvia il prossimo task in coda se disponibile
+                        self._start_next_pending_task()
                         break
                     
                     task.stdout = accumulated_stdout
@@ -277,6 +286,9 @@ class RunExerciseView(views.APIView):
                 )
                 self._ws_broadcast(task)
                 task_interrupted = True
+                
+                # Avvia il prossimo task in coda se disponibile
+                self._start_next_pending_task()
                 break
             
             if current_time - last_credit_check >= 1.0:
@@ -291,6 +303,9 @@ class RunExerciseView(views.APIView):
                         stderr=accumulated_stderr.strip()
                     )
                     self._ws_broadcast(task)
+                    
+                    # Avvia il prossimo task in coda se disponibile
+                    self._start_next_pending_task()
                 last_credit_check = current_time
             
             time.sleep(0.01)
@@ -386,6 +401,9 @@ class RunExerciseView(views.APIView):
         else:
             task.fail(stdout=final_stdout.strip(), stderr=final_stderr.strip())
         self._ws_broadcast(task)
+        
+        # Avvia il prossimo task in coda se disponibile
+        self._start_next_pending_task()
     
     # Pulisce il file temporaneo
     def _cleanup_temp_file(self, tmp_path: Optional[str]) -> None:
@@ -394,6 +412,14 @@ class RunExerciseView(views.APIView):
                 os.unlink(tmp_path)
             except Exception:
                 pass
+    
+    # Avvia il prossimo task in coda se disponibile
+    def _start_next_pending_task(self) -> None:
+        """Avvia il prossimo task in coda se c'è spazio disponibile"""
+        if Task.can_start_new_task():
+            next_task = Task.get_next_pending_task()
+            if next_task:
+                self._start_task_execution(next_task)
 
     # =============================
     # WebSocket helpers

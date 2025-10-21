@@ -166,6 +166,7 @@ MAX_SOURCE_CODE_LENGTH = config('MAX_SOURCE_CODE_LENGTH', cast=int, default=1000
 MAX_OUTPUT_BUFFER_SIZE = config('MAX_OUTPUT_BUFFER_SIZE', cast=int, default=50000)
 CODE_COMPILATION_TIMEOUT = config('CODE_COMPILATION_TIMEOUT', cast=int, default=10)
 PROGRAM_EXECUTION_TIMEOUT = config('PROGRAM_EXECUTION_TIMEOUT', cast=int, default=20)
+MAX_CONCURRENT_TASKS = config('MAX_CONCURRENT_TASKS', cast=int, default=5)
 
 # =============================================================================
 # AUTHENTICATION & SECURITY
