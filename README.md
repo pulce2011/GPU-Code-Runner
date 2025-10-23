@@ -91,6 +91,11 @@ Il progetto integra **frontend React**, **backend Django** e **moduli CUDA**, co
    ./launch.sh
    ```
 
+   #### Se si vuole saltare la fase di verifica:
+   ```bash
+   ./launch.sh -y
+   ```
+
    Lo script si occuperà di:
    * creare e attivare ambiente virtuale Python (venv)
    * controllare su CUDA-Toolkit è installato nel sistema
