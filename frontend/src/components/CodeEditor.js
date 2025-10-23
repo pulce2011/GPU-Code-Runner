@@ -14,27 +14,27 @@ import {
 function CodeEditor({ exercise, onCodeChange, runButton }) {
   const [code, setCode] = useState('');
 
-  // Determina linguaggio, nome e compilatore basati sull'estensione
+  // Determina linguaggio, nome e compilatore basati sull'estensione del file
   const fileExtension = exercise?.file_extension || '.c';
   const language = getLanguageFromExtension(fileExtension);
   const languageName = getLanguageNameFromExtension(fileExtension);
   const compiler = getCompilerFromExtension(fileExtension);
   const editorOptions = getEditorOptions(language);
 
-  // Carica template funzione quando cambia esercizio
+  // Carica il template della funzione quando cambia l'esercizio
   useEffect(() => {
     if (exercise) {
       setCode(exercise.signature || '');
     }
   }, [exercise]);
 
-  // Notifica cambiamenti codice al componente padre
+  // Notifica i cambiamenti del codice al componente padre
   const handleEditorChange = (value) => {
     setCode(value);
     onCodeChange(value);
   };
 
-  // Configura Monaco quando è pronto
+  // Configura Monaco Editor quando è pronto
   const handleEditorDidMount = (editor, monaco) => {
     // Configura supporto CUDA se necessario
     if (fileExtension === '.cu' || fileExtension === '.cuh') {
@@ -116,7 +116,7 @@ function CodeEditor({ exercise, onCodeChange, runButton }) {
           </span>
         </div>
         
-        {/* Bottone Esegui in basso a destra */}
+        {/* Bottone di esecuzione */}
         {runButton && (
             <div>
               {runButton}

@@ -21,7 +21,7 @@ function DashboardPage() {
   const stdoutRef = useRef(null);
   const stderrRef = useRef(null);
 
-  // Carica informazioni utente all'avvio
+  // Carica le informazioni dell'utente all'avvio
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
@@ -50,13 +50,14 @@ function DashboardPage() {
     }
   }, [taskDetails?.message]);
 
-  // Auto-scroll quando stdout/stderr vengono aggiornati
+  // Auto-scroll quando stdout viene aggiornato
   useEffect(() => {
     if (executionOutput?.stdout && stdoutRef.current) {
       stdoutRef.current.scrollTop = stdoutRef.current.scrollHeight;
     }
   }, [executionOutput?.stdout]);
 
+  // Auto-scroll quando stderr viene aggiornato
   useEffect(() => {
     if (executionOutput?.stderr && stderrRef.current) {
       stderrRef.current.scrollTop = stderrRef.current.scrollHeight;
@@ -72,13 +73,13 @@ function DashboardPage() {
     return undefined;
   }, [taskDetails?.started_at, taskDetails?.status]);
 
-  // Gestisce logout e redirect
+  // Gestisce il logout e il redirect
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  // Gestisce output esecuzione codice
+  // Gestisce l'output dell'esecuzione del codice
   const handleExecutionOutput = (output) => {
     setExecutionOutput(output);
   };
@@ -88,7 +89,7 @@ function DashboardPage() {
     setTaskDetails(details);
   };
 
-  // Gestisce aggiornamento crediti
+  // Gestisce l'aggiornamento dei crediti
   const handleCreditsUpdate = (newCredits) => {
     setUserInfo(prev => ({
       ...prev,
@@ -102,7 +103,7 @@ function DashboardPage() {
     setTaskDetails(null);
   };
 
-  // Formatta durata esecuzione
+  // Formatta la durata dell'esecuzione
   const formatDuration = (duration) => {
     if (!duration) return 'N/A';
     
@@ -129,7 +130,7 @@ function DashboardPage() {
     return `${secs}:${millis.toString().padStart(3, '0')}`;
   };
 
-  // Ottiene classe CSS per status
+  // Ottiene la classe CSS per lo status
   const getStatusClass = (status) => {
     const statusMap = {
       completed: 'bg-green-100 text-green-800',
@@ -142,7 +143,7 @@ function DashboardPage() {
     return statusMap[status] || 'bg-gray-100 text-gray-800';
   };
 
-  // Ottiene testo status
+  // Ottiene il testo dello status
   const getStatusText = (status) => {
     const statusMap = {
       completed: 'Completato',
@@ -155,7 +156,7 @@ function DashboardPage() {
     return statusMap[status] || 'Sconosciuto';
   };
 
-  // Ottiene icona per status
+  // Ottiene l'icona per lo status
   const getStatusIcon = (status) => {
     const icons = {
       completed: (
@@ -218,7 +219,7 @@ function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* User Info */}
+        {/* Informazioni utente */}
         <div className="mb-8">
           {loading ? (
             <div className="flex items-center space-x-2">
@@ -308,7 +309,7 @@ function DashboardPage() {
           </>
         )}
 
-        {/* Risultati esecuzione */}
+        {/* Risultati dell'esecuzione */}
         {taskDetails && (
           <div className="card">
             <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">

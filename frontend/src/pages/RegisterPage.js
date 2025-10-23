@@ -14,7 +14,7 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Carica lista corsi dal backend
+  // Carica la lista dei corsi dal backend
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -28,10 +28,11 @@ function RegisterPage() {
     fetchCourses();
   }, []);
 
-  // Gestisce submit form registrazione
+  // Gestisce il submit del form di registrazione
   const handleRegister = async (event) => {
     event.preventDefault();
     
+    // Validazione campi obbligatori
     if (!email || !matr || !firstName || !lastName || !password || !courseId) {
       alert('Compila tutti i campi');
       return;
@@ -69,7 +70,7 @@ function RegisterPage() {
         </h2>
       </div>
 
-      {/* Form registrazione */}
+      {/* Form di registrazione */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="card">
           <form className="space-y-6" onSubmit={handleRegister}>

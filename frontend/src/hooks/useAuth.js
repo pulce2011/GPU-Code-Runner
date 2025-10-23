@@ -6,12 +6,12 @@ export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Verifica validità token
+  // Verifica la validità di un token
   const isValidToken = (token) => {
     return token && token !== 'null' && token.trim() !== '';
   };
 
-  // Verifica autenticazione
+  // Verifica lo stato di autenticazione
   const checkAuth = useCallback(() => {
     const accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
@@ -25,7 +25,7 @@ export function useAuth() {
     setLoading(false);
   }, []);
 
-  // Pulisce token
+  // Pulisce tutti i token salvati
   const clearTokens = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -33,7 +33,7 @@ export function useAuth() {
     setIsAuthenticated(false);
   };
 
-  // Login
+  // Effettua il login dell'utente
   const login = (accessToken, refreshToken) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
@@ -41,12 +41,12 @@ export function useAuth() {
     setIsAuthenticated(true);
   };
 
-  // Logout
+  // Effettua il logout dell'utente
   const logout = () => {
     clearTokens();
   };
 
-  // Controlla auth all'avvio
+  // Controlla l'autenticazione all'avvio
   useEffect(() => {
     const t = setTimeout(checkAuth, 100);
     return () => clearTimeout(t);

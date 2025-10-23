@@ -11,16 +11,17 @@ function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // Gestisce submit form login
+  // Gestisce il submit del form di login
   const handleLogin = async (event) => {
     event.preventDefault();
     
+    // Validazione campi obbligatori
     if (!email || !password) {
       alert('Compila tutti i campi');
       return;
     }
 
-    // Avvia loading
+    // Avvia stato di caricamento
     setLoading(true);
     try {
       const response = await api.post('/token/', { email, password });

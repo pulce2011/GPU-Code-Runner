@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 from django.conf import settings
-from decouple import config
 
 
 ### Manager personalizzato per creare utenti con email e matricola invece di username ###
@@ -38,14 +37,12 @@ class UserManager(BaseUserManager):
         
         return self.create_user(email, matr, first_name, last_name, password, **extra_fields)
 
-
 ### Modello per rappresentare un corso universitario ###
 class Course(models.Model):
     name = models.CharField(max_length=200)
     
     def __str__(self) -> str:
         return self.name
-
 
 ### Modello utente personalizzato con email come login e matricola unica ###
 class User(AbstractUser):
@@ -79,8 +76,7 @@ class User(AbstractUser):
             return True
         return False
 
-
-### Modello per esercizi di programmazione con parametri JSON e firma funzione ###
+### Modello per esercizi di programmazione con parametri JSON e autocompilamento funzione ###
 class Exercise(models.Model):
     name = models.CharField(max_length=200)
     return_type = models.CharField(max_length=50)
@@ -93,7 +89,7 @@ class Exercise(models.Model):
     def __str__(self) -> str:
         return self.name
 
-    # Costruisce la firma della funzione con commenti e parametri
+    # Costruisce la sintassi funzione con commenti e parametri
     def build_signature(self) -> str:
         comment_block = f"/*\n{self.comment}\n*/" if self.comment else ""
         include_lines = "\n".join([f"#include <{inc}>" for inc in (self.include_files or [])])
@@ -109,7 +105,7 @@ class Exercise(models.Model):
         return "\n\n".join(parts)
 
 
-### Modello per rappresentare un task (Richiesta di esecuzione di un esercizio) ###  
+### Modello per rappresentare un task (Esecuzione di un esercizio) ###  
 class Task(models.Model):
     STATUS_CHOICES = [
         ('pending', 'In attesa'),
@@ -161,39 +157,38 @@ class Task(models.Model):
         self.save()
     
     # Segna il task come fallito
-    def fail(self, stdout='', stderr='') -> None:
+    def fail(self, stdout='', stderr='', message='') -> None:
         self.status = 'failed'
         self.finished_at = timezone.now()
         if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
         self.stdout = stdout
         self.stderr = stderr
-        self.message = "Task fallito."
+        self.message = message
         self.save()
     
     # Interrompe il task per crediti esauriti
-    def interrupt(self, stdout='', stderr='') -> None:
+    def interrupt(self, stdout='', stderr='', message='') -> None:
         self.status = 'interrupted'
         self.finished_at = timezone.now()
         if self.started_at is not None:
             self.total_execution_time = self.finished_at - self.started_at
         self.stdout = stdout
         self.stderr = stderr
-        self.message = "Task interrotto (crediti esauriti)."
+        self.message = message
         self.save()
     
+    # Restituisce il numero di task attualmente in esecuzione
     @classmethod
     def get_running_tasks_count(cls) -> int:
-        """Restituisce il numero di task attualmente in esecuzione"""
         return cls.objects.filter(status='running').count()
     
+    # Restituisce il prossimo task in attesa (FIFO)
     @classmethod
     def get_next_pending_task(cls):
-        """Restituisce il prossimo task in attesa (FIFO)"""
         return cls.objects.filter(status='pending').order_by('created_at').first()
     
+    # Verifica se è possibile avviare un nuovo task
     @classmethod
     def can_start_new_task(cls) -> bool:
-        """Verifica se è possibile avviare un nuovo task"""
-        from django.conf import settings
         return cls.get_running_tasks_count() < settings.MAX_CONCURRENT_TASKS

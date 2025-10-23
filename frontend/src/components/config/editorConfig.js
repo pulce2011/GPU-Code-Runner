@@ -1,17 +1,19 @@
-// editorConfig.js
+// Configurazione Monaco Editor per supporto multi-linguaggio
 
 // Mappa estensioni file a linguaggi Monaco Editor
 export const getLanguageFromExtension = (extension) => {
     const languageMap = {
-    // C/C++ family
+    // Famiglia C/C++
     '.c': 'c',
     '.cpp': 'cpp',
     '.cc': 'cpp',
     '.cxx': 'cpp',
-    '.cu': 'cpp', // CUDA uses C++ syntax
-    '.cuh': 'cpp', // CUDA header files
+
+     // CUDA (usa sintassi C++)
+    '.cu': 'cpp',
+    '.cuh': 'cpp',
     
-    // Web technologies
+    // Tecnologie web
     '.js': 'javascript',
     '.ts': 'typescript',
     '.html': 'html',
@@ -21,7 +23,7 @@ export const getLanguageFromExtension = (extension) => {
     '.json': 'json',
     '.xml': 'xml',
     
-    // Programming languages
+    // Linguaggi di programmazione
     '.py': 'python',
     '.java': 'java',
     '.cs': 'csharp',
@@ -34,23 +36,23 @@ export const getLanguageFromExtension = (extension) => {
     '.r': 'r',
     '.sql': 'sql',
     
-    // Markup and config
+    // Markup e configurazione
     '.md': 'markdown',
     '.yaml': 'yaml',
     '.yml': 'yaml',
     
-    // Shell scripts
+    // Script shell
     '.sh': 'shell',
     '.bash': 'shell',
     '.ps1': 'powershell',
     
-    // Build and config files
+    // File di build e configurazione
     '.dockerfile': 'dockerfile',
     '.makefile': 'makefile',
     '.ini': 'ini',
     '.properties': 'properties',
     
-    // Fallback for unsupported languages
+    // Fallback per linguaggi non supportati
     '.txt': 'plaintext',
     '.log': 'plaintext',
     '.plain': 'plaintext'
@@ -62,7 +64,7 @@ export const getLanguageFromExtension = (extension) => {
 // Mappa estensioni file a nomi linguaggi per UI
 export const getLanguageNameFromExtension = (extension) => {
     const nameMap = {
-    // C/C++ family
+    // Famiglia C/C++
     '.c': 'C',
     '.cpp': 'C++',
     '.cc': 'C++',
@@ -70,7 +72,7 @@ export const getLanguageNameFromExtension = (extension) => {
     '.cu': 'CUDA C++',
     '.cuh': 'CUDA C++',
     
-    // Web technologies
+    // Tecnologie web
     '.js': 'JavaScript',
     '.ts': 'TypeScript',
     '.html': 'HTML',
@@ -80,7 +82,7 @@ export const getLanguageNameFromExtension = (extension) => {
     '.json': 'JSON',
     '.xml': 'XML',
     
-    // Programming languages
+    // Linguaggi di programmazione
     '.py': 'Python',
     '.java': 'Java',
     '.cs': 'C#',
@@ -93,17 +95,17 @@ export const getLanguageNameFromExtension = (extension) => {
     '.r': 'R',
     '.sql': 'SQL',
     
-    // Markup and config
+    // Markup e configurazione
     '.md': 'Markdown',
     '.yaml': 'YAML',
     '.yml': 'YAML',
     
-    // Shell scripts
+    // Script shell
     '.sh': 'Shell',
     '.bash': 'Bash',
     '.ps1': 'PowerShell',
     
-    // Build and config files
+    // File di build e configurazione
     '.dockerfile': 'Dockerfile',
     '.makefile': 'Makefile',
     '.ini': 'INI',
@@ -121,7 +123,7 @@ export const getLanguageNameFromExtension = (extension) => {
 // Mappa estensioni file a compilatori per UI
 export const getCompilerFromExtension = (extension) => {
     const compilerMap = {
-    // C/C++ family
+    // Famiglia C/C++
     '.c': 'GCC',
     '.cpp': 'G++',
     '.cc': 'G++',
@@ -129,7 +131,7 @@ export const getCompilerFromExtension = (extension) => {
     '.cu': 'NVCC',
     '.cuh': 'NVCC',
     
-    // Web technologies
+    // Tecnologie web
     '.js': 'Node.js',
     '.ts': 'TypeScript',
     '.html': 'Browser',
@@ -139,7 +141,7 @@ export const getCompilerFromExtension = (extension) => {
     '.json': 'JSON',
     '.xml': 'XML',
     
-    // Programming languages
+    // Linguaggi di programmazione
     '.py': 'Python',
     '.java': 'javac',
     '.cs': 'csc',
@@ -152,17 +154,17 @@ export const getCompilerFromExtension = (extension) => {
     '.r': 'R',
     '.sql': 'SQL',
     
-    // Markup and config
+    // Markup e configurazione
     '.md': 'Markdown',
     '.yaml': 'YAML',
     '.yml': 'YAML',
     
-    // Shell scripts
+    // Script shell
     '.sh': 'Bash',
     '.bash': 'Bash',
     '.ps1': 'PowerShell',
     
-    // Build and config files
+    // File di build e configurazione
     '.dockerfile': 'Docker',
     '.makefile': 'Make',
     '.ini': 'Config',

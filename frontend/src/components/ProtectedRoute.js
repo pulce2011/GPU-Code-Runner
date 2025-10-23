@@ -5,14 +5,14 @@ import { useAuth } from '../hooks/useAuth';
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
-  // Redirect al login se non autenticato
+  // Redirect automatico al login se l'utente non è autenticato
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       window.location.href = '/login';
     }
   }, [isAuthenticated, loading]);
 
-  // Componente loading
+  // Componente di caricamento durante la verifica dell'autenticazione
   const LoadingComponent = () => (
     <div className="flex items-center justify-center min-h-screen">
       <div className="flex items-center space-x-2 text-gray-600">
@@ -25,7 +25,7 @@ function ProtectedRoute({ children }) {
     </div>
   );
 
-  // Componente redirect
+  // Componente di reindirizzamento per utenti non autenticati
   const RedirectComponent = () => (
     <div className="flex items-center justify-center min-h-screen">
       <div className="flex items-center space-x-2 text-gray-600">
@@ -38,14 +38,17 @@ function ProtectedRoute({ children }) {
     </div>
   );
 
+  // Mostra caricamento durante la verifica dell'autenticazione
   if (loading) {
     return <LoadingComponent />;
   }
 
+  // Reindirizza se non autenticato
   if (!isAuthenticated) {
     return <RedirectComponent />;
   }
 
+  // Renderizza il contenuto protetto se autenticato
   return children;
 }
 

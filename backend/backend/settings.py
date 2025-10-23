@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-import os
 from decouple import config, Csv
 from datetime import timedelta
 
@@ -29,12 +28,10 @@ SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', cast=bool, default=True)
-
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='')
 
 
-# Application definition
-
+# Applicazioni installate
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -126,9 +123,7 @@ CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', cast=Csv(), default='http:
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 
@@ -142,7 +137,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Channels layer (in-memory for dev)
+# Configurazione WebSocket per comunicazione real-time
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
@@ -150,15 +145,16 @@ CHANNEL_LAYERS = {
 }
 
 # =============================================================================
-# CREDIT SYSTEM CONFIGURATION
+# SISTEMA DI CREDITI
 # =============================================================================
 USER_INITIAL_CREDITS = config('USER_INITIAL_CREDITS', cast=int, default=100)
 DAILY_CREDITS_RESET_AMOUNT = config('DAILY_CREDITS_RESET_AMOUNT', cast=int, default=10)
 TASK_START_COST = config('TASK_START_COST', cast=int, default=1)
-DEFAULT_CREDIT_COST_PER_SECOND = config('DEFAULT_CREDIT_COST_PER_SECOND', cast=int, default=1)
+REDUCE_CREDITS_TIME_AMOUNT= config('REDUCE_CREDITS_TIME_AMOUNT', cast=float, default=1.0)
+DEFAULT_CREDIT_COST_PER_TIME_AMOUNT = config('DEFAULT_CREDIT_COST_PER_TIME_AMOUNT', cast=int, default=1)
 
 # =============================================================================
-# CODE EXECUTION & COMPILATION
+# ESECUZIONE E COMPILAZIONE CODICE
 # =============================================================================
 DEFAULT_FILE_EXTENSION = config('DEFAULT_FILE_EXTENSION', default='.cu')
 MAX_TASK_EXECUTION_TIME = config('MAX_TASK_EXECUTION_TIME', cast=int, default=30)
@@ -169,9 +165,9 @@ PROGRAM_EXECUTION_TIMEOUT = config('PROGRAM_EXECUTION_TIMEOUT', cast=int, defaul
 MAX_CONCURRENT_TASKS = config('MAX_CONCURRENT_TASKS', cast=int, default=5)
 
 # =============================================================================
-# AUTHENTICATION & SECURITY
+# AUTENTICAZIONE E SICUREZZA
 # =============================================================================
-# JWT Configuration
+# Configurazione JWT
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', cast=int, default=60)),
     'REFRESH_TOKEN_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', cast=int, default=1440)),
@@ -199,5 +195,5 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', cast=int, default=1440)),
 }
 
-# CSRF Configuration
+# Configurazione CSRF
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', cast=Csv(), default='http://localhost:3000,http://localhost:5173')

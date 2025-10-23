@@ -9,12 +9,14 @@ from .serializers import TaskSerializer
 
 
 class TaskConsumer(AsyncWebsocketConsumer):
+    # Connessione WebSocket
     async def connect(self):
         self.task_id = self.scope['url_route']['kwargs']['task_id']
         self.group_name = f'task_{self.task_id}'
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
+    # Disconnessione WebSocket
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
         # Alla disconnessione del client, interrompe il task se è in corso
@@ -26,9 +28,11 @@ class TaskConsumer(AsyncWebsocketConsumer):
                 'data': data
             })
 
+    # Gestisce aggiornamenti del task
     async def task_update(self, event):
         await self.send(text_data=json.dumps(event['data']))
 
+    # Interrompe il task se il client si disconnette
     @database_sync_to_async
     def _interrupt_task_if_running(self):
         try:

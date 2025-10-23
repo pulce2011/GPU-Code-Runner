@@ -16,10 +16,9 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 # =============================================================================
-# AUTHENTICATION & USER MANAGEMENT
+# AUTENTICAZIONE E GESTIONE UTENTI
 # =============================================================================
-
-### Informazioni utente corrente ###
+# Informazioni utente corrente
 class UserInfoView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -29,7 +28,7 @@ class UserInfoView(views.APIView):
         return Response(serializer.data)
 
 
-### Registrazione utente ###
+# Registrazione utente
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -43,17 +42,16 @@ class RegisterView(generics.CreateAPIView):
 
 
 # =============================================================================
-# COURSE & EXERCISE MANAGEMENT
+# GESTIONE CORSI ED ESERCIZI
 # =============================================================================
-
-### Lista corsi ###
+# Lista corsi
 class CourseListView(generics.ListAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [permissions.AllowAny]
 
 
-### Lista esercizi filtrati per corso utente loggato ###
+# Lista esercizi filtrati per corso
 class ExerciseListView(generics.ListAPIView):
     serializer_class = ExerciseSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -67,16 +65,45 @@ class ExerciseListView(generics.ListAPIView):
         if user.course:
             return Exercise.objects.filter(courses=user.course)
         return Exercise.objects.none()
+    
+
+# =============================================================================
+# CONSULTAZIONE E RECUPERO TASK
+# =============================================================================
+
+# Lista task dell'utente
+class TaskListView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request) -> Response:
+        tasks = Task.objects.filter(user=request.user).order_by('-created_at')[:10]
+        serializer = TaskSerializer(tasks, many=True)
+        return Response(serializer.data)
+
+
+# Dettagli di un task specifico
+class TaskDetailView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, task_id: int) -> Response:
+        try:
+            task = Task.objects.get(id=task_id, user=request.user)
+            serializer = TaskSerializer(task)
+            return Response(serializer.data)
+        except Task.DoesNotExist:
+            return Response({'error': 'Task non trovato'}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 # =============================================================================
-# CODE EXECUTION & TASK MANAGEMENT
+# ESECUZIONE CODICE E GESTIONE TASK
 # =============================================================================
 
-### Esecuzione codice con sistema crediti ###
+# Esecuzione codice con sistema crediti
 class RunExerciseView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    ### Richiesta POST /api/run/ ###
     def post(self, request) -> Response:
         # Validazione input
         validation_error = self._validate_request(request)
@@ -123,29 +150,29 @@ class RunExerciseView(views.APIView):
         except Exception as e:
             return self._error_response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    # Valida i dati della richiesta
+    ### Valida i dati della richiesta ###
     def _validate_request(self, request) -> Optional[Response]:
         if not request.data.get('code'):
-            return self._error_response('code is required', status.HTTP_400_BAD_REQUEST)
+            return self._error_response('Il campo "code" è obbligatorio.', status.HTTP_400_BAD_REQUEST)
         
         if not request.data.get('exercise_id'):
-            return self._error_response('exercise_id is required', status.HTTP_400_BAD_REQUEST)
+            return self._error_response('Errore nel recupero dell\'esercizio.', status.HTTP_404_NOT_FOUND)
         
         # Controllo lunghezza massima del codice sorgente
         code = request.data.get('code', '')
         if len(code) > settings.MAX_SOURCE_CODE_LENGTH:
             return self._error_response(
-                f'Codice troppo lungo. Massimo {settings.MAX_SOURCE_CODE_LENGTH} caratteri, forniti {len(code)}', 
+                f'Raggiunto limite massimo di {settings.MAX_SOURCE_CODE_LENGTH} caratteri.', 
                 status.HTTP_400_BAD_REQUEST
             )
         
         return None
     
-    # Crea una risposta di errore standardizzata
+    ### Crea una risposta di errore standardizzata ###
     def _error_response(self, message: str, status_code: int) -> Response:
-        return Response({'error': message}, status=status_code)
+        return Response({'message': message}, status=status_code)
     
-    # Crea un nuovo task
+    ### Crea un nuovo task ###
     def _create_task(self, user: User, exercise: Exercise, code: str) -> Task:
         task = Task.objects.create(
             user=user,
@@ -156,62 +183,63 @@ class RunExerciseView(views.APIView):
         task.pending()
         return task
     
-    # Avvia l'esecuzione del task in background
+    ### Crea un thread per eseguire il task in background ###
     def _start_task_execution(self, task: Task) -> None:
         thread = threading.Thread(target=self._execute_task, args=(task,))
         thread.daemon = True
         thread.start()
 
-    # Esecuzione del task in background con controllo crediti
+    ### Esecuzione del task in background con controllo crediti ###
     def _execute_task(self, task: Task) -> None:
         tmp_path = None
         try:
+            # Avvia il task
             task.start()
             self._ws_broadcast(task)
             tmp_path = self._create_temp_file(task.code, task.exercise)
             process = self._start_process(tmp_path, task.exercise)
-            
             task.process_id = process.pid
             task.save()
             self._ws_broadcast(task)
 
+            # Monitoraggio task
             output_data = self._monitor_process(process, task, tmp_path)
             
             if not output_data['interrupted']:
                 self._finalize_task(task, process, output_data)
             
         except Exception as e:
-            task.fail(stdout='', stderr=f'Errore durante l\'esecuzione: {str(e)}')
+            task.fail(
+                stdout='',
+                stderr=f'Errore durante l\'esecuzione: {str(e)}',
+                message=f'Errore durante l\'esecuzione: {str(e)}'
+                )
             self._ws_broadcast(task)
             # Pulisce il file temporaneo anche in caso di errore
             self._cleanup_temp_file(tmp_path)
-        finally:
-            # Rimuovi la pulizia da qui perché ora è gestita in _finalize_task
-            pass
     
-    # Crea un file temporaneo con il codice
+    ### Crea un file temporaneo con il codice in ./gpu/<exercise.name> ###
     def _create_temp_file(self, code: str, exercise: Exercise) -> str:
-        # Directory: ./gpu/<exercise.name>
-        safe_name = ''.join(ch for ch in exercise.name if ch.isalnum() or ch in ('-', '_')) or 'exercise'
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'gpu', safe_name))
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'gpu', exercise.name))
         os.makedirs(base_dir, exist_ok=True)
 
         with tempfile.NamedTemporaryFile(
             mode='w',
             suffix=exercise.file_extension,
-            prefix='code_',
-            delete=False,
+            prefix='tmp_',
+            delete=False, # Deve essere 'False' per evitare che il file non venga usato esternamente
             dir=base_dir
         ) as f:
             f.write(code)
             return f.name
     
-    # Avvia il processo di esecuzione
+    ### Avvia il processo di esecuzione ###
     def _start_process(self, tmp_path: str, exercise: Exercise) -> subprocess.Popen:
         
         script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'run_exercise.sh'))
         
         if shutil.which('stdbuf'):
+            # Con controllo buffering
             cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path, exercise.name]
         else:
             cmd = ['bash', script_path, tmp_path, exercise.name]
@@ -224,112 +252,125 @@ class RunExerciseView(views.APIView):
             bufsize=1
         )
     
-    # Monitora il processo e gestisce i crediti
+    ### Monitora il processo e gestisce i crediti ###
     def _monitor_process(self, process: subprocess.Popen, task: Task, tmp_path: str = None) -> Dict[str, Any]:
-        accumulated_stdout = ""
-        accumulated_stderr = ""
-        last_broadcast_stdout_len = 0
-        last_broadcast_stderr_len = 0
-        start_time = time.time()
-        task_interrupted = False
-        last_credit_check = start_time
+        # Variabili per accumulare l'output del processo
+        stdout = ""
+        stderr = ""
+        last_broadcast_stdout_len = 0  # Lunghezza ultimo broadcast per evitare duplicati
+        last_broadcast_stderr_len = 0  # Lunghezza ultimo broadcast per evitare duplicati
+        start_time = time.time()     # Timestamp inizio esecuzione
+        task_interrupted = False     # Flag per interruzione task
+        last_credit_check = start_time  # Ultimo controllo crediti
         
+        # Loop principale: continua finché il processo è attivo e non interrotto
         while process.poll() is None and not task_interrupted:
-            # Polling non bloccante per output istantaneo
-            accumulated_stdout, accumulated_stderr = self._read_process_output(
-                process, accumulated_stdout, accumulated_stderr
+            # 1. LEGGE L'OUTPUT DEL PROCESSO (non bloccante)
+            stdout, stderr = self._read_process_output(
+                process, stdout, stderr
             )
             
-            # Se c'è nuovo output, aggiorna il task e invia un broadcast per lo streaming realtime
-            if (len(accumulated_stdout) > last_broadcast_stdout_len) or (len(accumulated_stderr) > last_broadcast_stderr_len):
+            # 2. CONTROLLA SE C'È NUOVO OUTPUT DA INVIARE AL CLIENT
+            if (len(stdout) > last_broadcast_stdout_len) or (len(stderr) > last_broadcast_stderr_len):
                 try:
-                    # Controllo dimensione massima output
-                    if len(accumulated_stdout) > settings.MAX_OUTPUT_BUFFER_SIZE or len(accumulated_stderr) > settings.MAX_OUTPUT_BUFFER_SIZE:
+                    # 2a. CONTROLLO DIMENSIONE MASSIMA OUTPUT (protezione memoria)
+                    if len(stdout) > settings.MAX_OUTPUT_BUFFER_SIZE or len(stderr) > settings.MAX_OUTPUT_BUFFER_SIZE:
                         # Tronca l'output se supera la dimensione massima
-                        if len(accumulated_stdout) > settings.MAX_OUTPUT_BUFFER_SIZE:
-                            accumulated_stdout = accumulated_stdout[:settings.MAX_OUTPUT_BUFFER_SIZE] + "\n... [Output troncato per dimensione massima]"
-                        if len(accumulated_stderr) > settings.MAX_OUTPUT_BUFFER_SIZE:
-                            accumulated_stderr = accumulated_stderr[:settings.MAX_OUTPUT_BUFFER_SIZE] + "\n... [Output troncato per dimensione massima]"
-                        # Termina il processo se l'output è troppo grande
+                        if len(stdout) > settings.MAX_OUTPUT_BUFFER_SIZE:
+                            stdout = stdout[:settings.MAX_OUTPUT_BUFFER_SIZE] + "\n... [Output troncato per dimensione massima]"
+                        if len(stderr) > settings.MAX_OUTPUT_BUFFER_SIZE:
+                            stderr = stderr[:settings.MAX_OUTPUT_BUFFER_SIZE] + "\n... [Output troncato per dimensione massima]"
+                        
+                        # TERMINA IL PROCESSO se l'output è troppo grande
                         self._terminate_process(process)
                         task.fail(
-                            stdout=accumulated_stdout.strip(), 
-                            stderr=f"{accumulated_stderr.strip()}Task terminato per output troppo grande (max {settings.MAX_OUTPUT_BUFFER_SIZE} caratteri)"
+                            stdout=stdout.strip(), 
+                            stderr=f"{stderr.strip()}Task terminato per output troppo grande (max {settings.MAX_OUTPUT_BUFFER_SIZE} caratteri)",
+                            message=f"Task terminato per output troppo grande (max {settings.MAX_OUTPUT_BUFFER_SIZE} caratteri)"
+                            
                         )
                         self._ws_broadcast(task)
                         task_interrupted = True
                         
-                        # Pulisce il file temporaneo
+                        # PULIZIA: rimuove file temporaneo e avvia prossimo task
                         self._cleanup_temp_file(tmp_path)
-                        
-                        # Avvia il prossimo task in coda se disponibile
                         self._start_next_pending_task()
                         break
                     
-                    task.stdout = accumulated_stdout
-                    task.stderr = accumulated_stderr
-                    # Non cambiamo lo status qui: resta 'running'
-                    task.save(update_fields=["stdout", "stderr"])  # riduce scritture inutili
+                    # 2b. AGGIORNA IL TASK CON L'OUTPUT E INVIALO AL CLIENT
+                    task.stdout = stdout
+                    task.stderr = stderr
+                    task.save(update_fields=["stdout", "stderr"])
                     self._ws_broadcast(task)
                 except Exception:
                     # Non interrompere il loop in caso di errori di I/O/WS
                     pass
-                last_broadcast_stdout_len = len(accumulated_stdout)
-                last_broadcast_stderr_len = len(accumulated_stderr)
+                # Aggiorna le lunghezze per evitare duplicati
+                last_broadcast_stdout_len = len(stdout)
+                last_broadcast_stderr_len = len(stderr)
             
-            # Controllo crediti ogni secondo (senza sleep bloccante)
+            # 3. CONTROLLI DI SICUREZZA E TIMEOUT
             current_time = time.time()
-            # Controllo timeout massimo di esecuzione
             elapsed_seconds = current_time - start_time
+            
+            # 3a. CONTROLLO TIMEOUT MASSIMO (evita processi infiniti)
             if elapsed_seconds >= settings.MAX_TASK_EXECUTION_TIME:
+                # TERMINA IL PROCESSO per timeout
                 self._terminate_process(process)
-                accumulated_stdout, accumulated_stderr = self._get_remaining_output(
-                    process, accumulated_stdout, accumulated_stderr
+                stdout, stderr = self._get_remaining_output(
+                    process, stdout, stderr
                 )
                 task.fail(
-                    stdout=accumulated_stdout.strip(), 
-                    stderr=f"{accumulated_stderr.strip()}Task terminato per timeout massimo ({settings.MAX_TASK_EXECUTION_TIME}s)"
+                    stdout=stdout.strip(), 
+                    stderr=f"{stderr.strip()}Task terminato per timeout massimo ({settings.MAX_TASK_EXECUTION_TIME}s)",
+                    message=f"Task terminato per timeout massimo ({settings.MAX_TASK_EXECUTION_TIME}s)"
                 )
                 self._ws_broadcast(task)
                 task_interrupted = True
                 
-                # Pulisce il file temporaneo
+                # PULIZIA: rimuove file temporaneo e avvia prossimo task
                 self._cleanup_temp_file(tmp_path)
-                
-                # Avvia il prossimo task in coda se disponibile
                 self._start_next_pending_task()
                 break
             
-            if current_time - last_credit_check >= 1.0:
+            
+            # 4. CONTROLLO CREDITI OGNI SECONDO (sistema di pagamento)
+            if current_time - last_credit_check >= settings.REDUCE_CREDITS_TIME_AMOUNT:
+                # Aggiorna i dati utente dal database
                 task.user.refresh_from_db()
+                
+                # Controlla se l'utente ha ancora crediti e li riduce se necessario
                 task_interrupted = self._handle_credits_deduction(task, elapsed_seconds, process)
-                if task_interrupted:
-                    accumulated_stdout, accumulated_stderr = self._get_remaining_output(
-                        process, accumulated_stdout, accumulated_stderr
+                
+                if task_interrupted:  # Se l'utente non ha più crediti
+                    # Cattura l'output rimanente dal processo prima di terminarlo
+                    stdout, stderr = self._get_remaining_output(
+                        process, stdout, stderr
                     )
+                    
+                    # Segna il task come interrotto per crediti esauriti
                     task.interrupt(
-                        stdout=accumulated_stdout.strip(), 
-                        stderr=accumulated_stderr.strip()
+                        stdout=stdout.strip(), 
+                        stderr=stderr.strip(),
+                        message="Crediti esauriti."
                     )
                     self._ws_broadcast(task)
-                    
-                    # Pulisce il file temporaneo
                     self._cleanup_temp_file(tmp_path)
-                    
-                    # Avvia il prossimo task in coda se disponibile
                     self._start_next_pending_task()
+                
                 last_credit_check = current_time
-            
-            time.sleep(0.01)
+            time.sleep(0.01)  # 10ms di pausa
+        
+        # 6. RESTITUISCE I RISULTATI DEL MONITORAGGIO
         return {
-            'stdout': accumulated_stdout,
-            'stderr': accumulated_stderr,
-            'interrupted': task_interrupted,
-            'start_time': start_time,
-            'tmp_path': tmp_path
+            'stdout': stdout,      # Output completo del programma
+            'stderr': stderr,      # Errori completi del programma
+            'interrupted': task_interrupted,   # Se il task è stato interrotto
+            'start_time': start_time,          # Timestamp di inizio
+            'tmp_path': tmp_path               # Percorso del file temporaneo
         }
     
-    # Legge l'output del processo in modo non bloccante
+    ### Legge l'output del processo in modo non bloccante ###
     def _read_process_output(self, process: subprocess.Popen, stdout: str, stderr: str) -> tuple:
         try:
             # Drena tutte le linee disponibili su stdout
@@ -356,10 +397,11 @@ class RunExerciseView(views.APIView):
             pass
         return stdout, stderr
     
-    # Gestisce la deduzione dei crediti e l'interruzione se necessario
+    ### Gestisce la deduzione dei crediti e l'interruzione se necessario ###
     def _handle_credits_deduction(self, task: Task, elapsed_seconds: float, process: subprocess.Popen) -> bool:
-        credits_needed = int(elapsed_seconds * settings.DEFAULT_CREDIT_COST_PER_SECOND)
-        
+        credits_needed = int(elapsed_seconds * settings.DEFAULT_CREDIT_COST_PER_TIME_AMOUNT)
+    
+        # Controlla se l'utente ha abbastanza crediti per continuare
         if task.user.credits >= credits_needed - task.credits_cost:
             credits_to_deduct = credits_needed - task.credits_cost
             if credits_to_deduct > 0:
@@ -372,7 +414,7 @@ class RunExerciseView(views.APIView):
             self._terminate_process(process)
             return True
     
-    # Termina il processo in modo sicuro
+    ### Termina il processo in modo sicuro ###
     def _terminate_process(self, process: subprocess.Popen) -> None:
         process.terminate()
         try:
@@ -380,7 +422,7 @@ class RunExerciseView(views.APIView):
         except subprocess.TimeoutExpired:
             process.kill()
     
-    # Ottiene l'output rimanente dal processo terminato
+    ### Ottiene l'output rimanente dal processo terminato ###
     def _get_remaining_output(self, process: subprocess.Popen, stdout: str, stderr: str) -> tuple:
         try:
             remaining_stdout, remaining_stderr = process.communicate(timeout=min(0.5, settings.PROGRAM_EXECUTION_TIMEOUT))
@@ -390,7 +432,7 @@ class RunExerciseView(views.APIView):
             pass
         return stdout, stderr
     
-    # Finalizza il task con l'output completo
+    ### Finalizza il task con l'output completo ###
     def _finalize_task(self, task: Task, process: subprocess.Popen, output_data: Dict[str, Any]) -> None:
         
         # Ottiene l'output rimanente dal processo terminato
@@ -400,7 +442,7 @@ class RunExerciseView(views.APIView):
         
         # Calcolo tempo di esecuzione e crediti utilizzati
         total_seconds = time.time() - output_data['start_time']
-        total_credits_used = int(total_seconds * settings.DEFAULT_CREDIT_COST_PER_SECOND)
+        total_credits_used = int(total_seconds * settings.DEFAULT_CREDIT_COST_PER_TIME_AMOUNT)
         
         # Deduzione crediti se necessario
         if total_credits_used > task.credits_cost:
@@ -421,7 +463,7 @@ class RunExerciseView(views.APIView):
         # Avvia il prossimo task in coda se disponibile
         self._start_next_pending_task()
     
-    # Pulisce il file temporaneo
+    ### Pulisce il file temporaneo ###
     def _cleanup_temp_file(self, tmp_path: Optional[str]) -> None:
         if tmp_path:
             try:
@@ -429,17 +471,14 @@ class RunExerciseView(views.APIView):
             except Exception:
                 pass
     
-    # Avvia il prossimo task in coda se disponibile
+    ### Avvia il prossimo task in coda se disponibile ###
     def _start_next_pending_task(self) -> None:
-        """Avvia il prossimo task in coda se c'è spazio disponibile"""
         if Task.can_start_new_task():
             next_task = Task.get_next_pending_task()
             if next_task:
                 self._start_task_execution(next_task)
 
-    # =============================
-    # WebSocket helpers
-    # =============================
+    ### Invia aggiornamenti Task attraverso WebSocket ###
     def _ws_broadcast(self, task: Task) -> None:
         try:
             channel_layer = get_channel_layer()
@@ -451,31 +490,5 @@ class RunExerciseView(views.APIView):
                 { 'type': 'task_update', 'data': data }
             )
         except Exception:
-            # Evita che errori WS interrompano l'esecuzione
+            # Ignora errori WebSocket
             pass
-
-# =============================================================================
-# TASK QUERY & RETRIEVAL
-# =============================================================================
-
-### Lista task dell'utente ###
-class TaskListView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request) -> Response:
-        tasks = Task.objects.filter(user=request.user).order_by('-created_at')[:10]
-        serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data)
-
-
-### Dettagli di un task specifico ###
-class TaskDetailView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, task_id: int) -> Response:
-        try:
-            task = Task.objects.get(id=task_id, user=request.user)
-            serializer = TaskSerializer(task)
-            return Response(serializer.data)
-        except Task.DoesNotExist:
-            return Response({'error': 'Task non trovato'}, status=status.HTTP_404_NOT_FOUND)

@@ -7,7 +7,7 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Gestisce submit form
+  // Gestisce il submit del form di login
   const handleLogin = async (event) => {
     event.preventDefault();
     
@@ -20,7 +20,7 @@ function Login({ onLogin }) {
     setLoading(true);
     try {
       const response = await api.post('/token/', { email, password });
-      // Imposta i token nel localStorage e chiama la funzione di login
+      // Salva i token e notifica il login
       setTokens(response.data.access, response.data.refresh);
       onLogin(response.data.access, response.data.refresh);
     } catch (error) {

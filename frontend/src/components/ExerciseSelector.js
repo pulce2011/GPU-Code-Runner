@@ -7,7 +7,7 @@ function ExerciseSelector({ onSelect }) {
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Carica esercizi all'avvio
+  // Carica la lista degli esercizi disponibili
   useEffect(() => {
     const fetchExercises = async () => {
       try {
@@ -26,7 +26,7 @@ function ExerciseSelector({ onSelect }) {
     fetchExercises();
   }, []);
 
-  // Gestisce selezione esercizio
+  // Gestisce la selezione di un esercizio
   const handleChange = (event) => {
     const id = event.target.value;
     setSelectedId(id);
@@ -35,7 +35,7 @@ function ExerciseSelector({ onSelect }) {
     onSelect(exercise);
   };
 
-  // Componente loading spinner
+  // Componente di caricamento durante il fetch degli esercizi
   const LoadingSpinner = () => (
     <div className="flex items-center justify-center py-8">
       <div className="flex items-center space-x-2 text-gray-600">
@@ -55,7 +55,7 @@ function ExerciseSelector({ onSelect }) {
   return (
     <div className="space-y-4">
 
-      {/* Selezione esercizio */}
+      {/* Dropdown per selezione esercizio */}
       <div className="form-group">
         <label htmlFor="exercise-select" className="form-label">
           Seleziona un esercizio
@@ -75,7 +75,7 @@ function ExerciseSelector({ onSelect }) {
         </select>
       </div>
       
-      {/* Messaggio nessun esercizio */}
+      {/* Messaggio quando non ci sono esercizi disponibili */}
       {exercises.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

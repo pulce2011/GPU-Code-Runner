@@ -12,7 +12,7 @@ function Register({ onRegister, onSwitchToLogin }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Carica lista corsi
+  // Carica la lista dei corsi disponibili
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -167,7 +167,7 @@ function Register({ onRegister, onSwitchToLogin }) {
         />
       </div>
 
-      {/* Bottone registrazione */}
+      {/* Bottone di registrazione */}
       <button
         onClick={handleRegister}
         className="btn-primary w-full"
