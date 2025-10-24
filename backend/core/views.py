@@ -197,7 +197,7 @@ class RunExerciseView(views.APIView):
             task.start()
             self._ws_broadcast(task)
             tmp_path = self._create_temp_file(task.code, task.exercise)
-            process = self._start_process(tmp_path, task.exercise)
+            process = self._start_process(tmp_path, task.exercise, task.user.matr)
             task.process_id = process.pid
             task.save()
             self._ws_broadcast(task)
@@ -234,15 +234,15 @@ class RunExerciseView(views.APIView):
             return f.name
     
     ### Avvia il processo di esecuzione ###
-    def _start_process(self, tmp_path: str, exercise: Exercise) -> subprocess.Popen:
+    def _start_process(self, tmp_path: str, exercise: Exercise, user_matr: str) -> subprocess.Popen:
         
         script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'run_exercise.sh'))
         
         if shutil.which('stdbuf'):
             # Con controllo buffering
-            cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path, exercise.name]
+            cmd = ['stdbuf', '-oL', '-eL', 'bash', script_path, tmp_path, exercise.name, user_matr]
         else:
-            cmd = ['bash', script_path, tmp_path, exercise.name]
+            cmd = ['bash', script_path, tmp_path, exercise.name, user_matr]
 
         return subprocess.Popen(
             cmd,
@@ -467,6 +467,7 @@ class RunExerciseView(views.APIView):
     def _cleanup_temp_file(self, tmp_path: Optional[str]) -> None:
         if tmp_path:
             try:
+                # Pulisce il file sorgente temporaneo
                 os.unlink(tmp_path)
             except Exception:
                 pass

@@ -2,6 +2,11 @@
 # run_exercise.sh
 # $1 = percorso file codice da eseguire (temporaneo)
 # $2 = nome dell'esercizio
+# $3 = matricola utente
+
+CODE_PATH="$1"
+EXERCISE_NAME="$2"
+USER_MATR="$3"
 
 # Carica variabili di debug da .env
 if [ -f ".env" ]; then
@@ -15,14 +20,14 @@ fi
 
 # Debug mode se abilitato
 if [ "$SCRIPT_DEBUG" = "true" ]; then
-    echo "> === SCRIPT DEBUG ==="; sleep 0.1
-    echo ">     Exercise: $2"; sleep 0.1
-    echo ">     Code path: $1"; sleep 0.1
+    echo "> === SCRIPT DEBUG (run_exercise.sh) ==="; sleep 0.1
+    echo ">     Exercise: '$2'"; sleep 0.1
+    echo ">     Code path: '$1'"; sleep 0.1
+    echo ">     User MATR: '$3'"; sleep 0.1
     echo "> === END DEBUG ==="; sleep 0.1
     echo
 fi
 
 # Esegue lo script specifico per l'esercizio
-EXERCISE_NAME="${2}"
-bash "gpu/${EXERCISE_NAME}/run.sh" "$1" 
+bash "gpu/${EXERCISE_NAME}/run.sh" "$CODE_PATH" "$EXERCISE_NAME" "$USER_MATR"
 exit $?
