@@ -2,14 +2,15 @@
 
 ## 📘 Descrizione del progetto
 
-**GPU-Code-Runner** è una piattaforma web per l'esecuzione di codice su GPU in ambiente controllato. Il sistema permette agli utenti di:
+**GPU-Code-Runner** è una piattaforma web per l'esecuzione di codice su GPU in ambiente controllato.
+#### Il sistema permette agli utenti di:
 
-* scrivere ed eseguire esercizi CUDA direttamente da interfaccia web,
-* gestire i propri crediti giornalieri di esecuzione,
-* interagire con un backend Python/Django con supporto WebSocket,
-* visualizzare risultati e log in tempo reale.
+* scrivere ed eseguire esercizi CUDA direttamente da interfaccia web
+* gestire i propri crediti giornalieri di esecuzione
+* interagire con un backend Python/Django con supporto WebSocket
+* visualizzare risultati e log in tempo reale
 
-Il progetto integra **frontend React**, **backend Django** e **moduli CUDA**, con un'infrastruttura automatizzata per il reset dei crediti e l'esecuzione su GPU.
+Il progetto integra **frontend React**, **backend Django** e **moduli CUDA**, con un'infrastruttura automatizzata per il reset dei crediti e l'esecuzione del codice su GPU.
 
 ---
 
@@ -23,14 +24,19 @@ Il progetto integra **frontend React**, **backend Django** e **moduli CUDA**, co
 
 ### **Backend (Django)**
 
-* Gestisce autenticazione, utenti, crediti e logiche di business.
-* Espone API per il frontend e comandi personalizzati per la manutenzione (es. reset crediti, generazione esercizi).
-* Include moduli CUDA nella cartella `gpu/` (esempi `sum/`, `diff/`).
+* Gestisce autenticazione, utenti, crediti e tasks.
+* Espone API REST per il frontend e comandi personalizzati per la manutenzione.
+* Include funzionalità WebSocket per aggiornamenti real-time.
+* Include esercizi CUDA nella cartella `gpu/` (esempi `sum/`, `diff/`).
+* Sistema di coda per gestire task concorrenti.
+* Comandi di gestione per reset crediti, generazione dati di esempio e pulizia database.
 
 ### **GPU / Esecuzione CUDA**
 
-* Ogni task GPU viene eseguito tramite script shell (`run.sh`) che compila e lancia il file `main.cu` corrispondente.
-* Gli output vengono gestiti dal backend e restituiti all'utente.
+* Ogni task GPU viene eseguito tramite script shell (`run_exercise.sh`) che compila e lancia il codice CUDA.
+* Gli output vengono gestiti dal backend e restituiti all'utente in tempo reale.
+* Sistema di monitoraggio crediti con interruzione automatica se insufficienti.
+* Supporto per diversi tipi di esercizi con configurazioni personalizzate.
 
 ---
 
@@ -42,7 +48,6 @@ Il progetto integra **frontend React**, **backend Django** e **moduli CUDA**, co
 * Node.js 18+
 * npm o yarn
 * CUDA Toolkit installato e configurato
-* (Opzionale) NVCV Toolkit per elaborazioni avanzate
 
 ### **Installazione step-by-step**
 
@@ -129,6 +134,26 @@ npm start
 
 ---
 
+## 🆕 Funzionalità Principali
+
+### **Comunicazione Real-time**
+* **WebSocket**: Aggiornamenti in tempo reale durante l'esecuzione dei task
+* **Monitoraggio Live**: Visualizzazione output e stato di esecuzione senza refresh
+* **Interruzione Automatica**: Stop immediato se crediti insufficienti
+
+### **Sistema di Gestione**
+* **Comandi Django**: Tool per amministrazione e manutenzione
+* **Reset Automatico**: Cron job per reset giornaliero crediti alle 00:00
+* **Coda Task**: Gestione intelligente di task concorrenti
+* **Pulizia Database**: Comandi per reset completo o parziale dati
+
+### **Editor Avanzato**
+* **Monaco Editor**: Supporto completo per CUDA e altri linguaggi
+* **Template Predefiniti**: Signature di funzioni per ogni esercizio
+* **Sintassi Highlighting**: Evidenziazione codice in tempo reale
+
+---
+
 ## 🔁 Reset giornaliero crediti (cron job)
 
 Il sistema include un meccanismo automatico che resetta i crediti degli utenti ogni giorno alle **00:00**.
@@ -137,24 +162,78 @@ Il sistema include un meccanismo automatico che resetta i crediti degli utenti o
 ## 📂 Struttura delle directory
 
 ```
-GPU-Code-Runner-main/
+GPU-Code-Runner/
 ├── launch.sh
 ├── backend/
 │   ├── manage.py
 │   ├── requirements.txt
+│   ├── run_exercise.sh
 │   ├── core/
-│   │   ├── models.py, views.py, websocket.py, ...
+│   │   ├── models.py, views.py, websocket.py, routing.py
+│   │   ├── serializers.py, urls.py, admin.py
 │   │   └── management/commands/ (comandi personalizzati)
+│   │       ├── reset_daily_credits.py
+│   │       ├── generate_courses.py
+│   │       ├── generate_exercises.py
+│   │       ├── clear_courses.py
+│   │       ├── clear_exercises.py
+│   │       └── clear_tasks.py
 │   ├── gpu/
 │   │   ├── sum/main.cu
 │   │   └── diff/main.cu
 ├── frontend/
 │   ├── package.json
+│   ├── tailwind.config.js
 │   ├── src/
-│   │   ├── components/, pages/, hooks/, services/
-│   │   └── App.js, index.js, ecc.
+│   │   ├── components/
+│   │   │   ├── CodeEditor.js
+│   │   │   ├── ExerciseSelector.js
+│   │   │   ├── RunButton.js
+│   │   │   ├── Login.js, Register.js
+│   │   │   ├── ProtectedRoute.js
+│   │   │   └── config/ (configurazioni editor)
+│   │   ├── pages/
+│   │   │   ├── DashboardPage.js
+│   │   │   ├── LoginPage.js
+│   │   │   └── RegisterPage.js
+│   │   ├── services/ (API e WebSocket)
+│   │   └── hooks/ (React hooks personalizzati)
+├── docs/
+│   ├── RunExerciseView_Private_Methods_rendered.md
+│   ├── RunExerciseView_Private_Methods_rendered.pdf
+│   ├── flowcharts/ (diagrammi Mermaid)
+│   └── render_mermaid_to_svg.py
 └── README.md
 ```
+
+---
+
+## 🛠️ Comandi di Gestione
+
+Il sistema include diversi comandi Django per la gestione e manutenzione:
+
+### **Comandi Disponibili**
+
+```bash
+# Reset crediti giornaliero
+python manage.py reset_daily_credits
+
+# Generazione dati di esempio
+python manage.py generate_courses
+python manage.py generate_exercises
+
+# Pulizia database
+python manage.py clear_courses
+python manage.py clear_exercises
+python manage.py clear_tasks
+```
+
+### **Utilizzo Comandi**
+
+* **`reset_daily_credits`**: Ripristina i crediti di tutti gli utenti al valore configurato
+* **`generate_courses`**: Crea corsi predefiniti nel database
+* **`generate_exercises`**: Crea esercizi CUDA con template predefiniti
+* **`clear_*`**: Rimuove tutti i record del tipo specificato dal database
 
 ---
 
