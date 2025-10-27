@@ -458,13 +458,13 @@ class RunExerciseView(views.APIView):
         self._ws_broadcast(task)
         
         # Pulisce il file temporaneo
-        self._cleanup_temp_file(output_data.get('tmp_path'))
+        self._cleanup_temp_file(output_data.get('tmp_path'), task.user.matr)
         
         # Avvia il prossimo task in coda se disponibile
         self._start_next_pending_task()
     
     ### Pulisce il file temporaneo ###
-    def _cleanup_temp_file(self, tmp_path: Optional[str]) -> None:
+    def _cleanup_temp_file(self, tmp_path: Optional[str], user_matr: str) -> None:
         if tmp_path:
             try:
                 # Pulisce il file sorgente temporaneo
