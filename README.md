@@ -98,7 +98,7 @@ Il progetto integra **frontend React**, **backend Django** e **moduli CUDA**, co
 
    Lo script si occuperà di:
    * creare e attivare ambiente virtuale Python (venv)
-   * controllare su CUDA-Toolkit è installato nel sistema
+   * verificare se CUDA-Toolkit è installato nel sistema
    * installare dipendenze backend e frontend
    * mostrare variabili .env
    * configurare il cron per il reset giornaliero crediti
